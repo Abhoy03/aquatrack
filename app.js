@@ -481,12 +481,21 @@ class AquaTrackApp {
         });
 
         const menuToggle = document.getElementById('menuToggle');
-        const sidebar = document.getElementById('sidebar');
-        if (menuToggle && sidebar) {
-            menuToggle.addEventListener('click', () => {
-                sidebar.classList.toggle('open');
+        if (menuToggle) {
+            menuToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleSidebar();
             });
         }
+    }
+
+    toggleSidebar(forceState) {
+        const sidebar = document.getElementById('sidebar');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        if (!sidebar) return;
+        const isOpen = typeof forceState === 'boolean' ? forceState : !sidebar.classList.contains('open');
+        sidebar.classList.toggle('open', isOpen);
+        if (backdrop) backdrop.classList.toggle('active', isOpen);
     }
 
     navigateTo(sectionId) {
@@ -519,8 +528,7 @@ class AquaTrackApp {
         if (topTitle && titles[sectionId]) topTitle.textContent = titles[sectionId].title;
         if (topSub && titles[sectionId]) topSub.textContent = titles[sectionId].sub;
 
-        const sidebar = document.getElementById('sidebar');
-        if (sidebar) sidebar.classList.remove('open');
+        this.toggleSidebar(false);
 
         this.renderCurrentSection();
     }
@@ -761,11 +769,11 @@ class AquaTrackApp {
                     </div>
                 </div>
 
-                <div class="stock-indicator">
-                    <span>Stock: <strong>${p.stock || 0} Units</strong> (~${((p.stock || 0)/(p.unitsPerBox || 24)).toFixed(1)} Boxes)</span>
-                    <div style="display: flex; gap: 6px;">
-                        <button class="btn btn-secondary btn-sm" onclick="app.editProduct('${p.id}')">Edit</button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="app.deleteProduct('${p.id}')">Delete</button>
+                <div class="product-footer-actions">
+                    <div class="product-stock-desc">Stock: <strong>${p.stock || 0} Units</strong> (~${((p.stock || 0)/(p.unitsPerBox || 24)).toFixed(1)} Boxes)</div>
+                    <div class="product-btns">
+                        <button class="btn btn-secondary btn-sm" onclick="app.editProduct('${p.id}')">✏️ Edit</button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="app.deleteProduct('${p.id}')">🗑️ Delete</button>
                     </div>
                 </div>
             `;
@@ -1015,11 +1023,13 @@ class AquaTrackApp {
                     </div>
                 </div>
 
-                <div class="store-actions">
-                    <button class="btn btn-primary btn-sm" style="flex: 1;" onclick="app.openStatement('${s.id}')">📜 Statement / Khata</button>
-                    <button class="btn btn-success btn-sm" onclick="app.openPaymentModal('${s.id}')">+ Payment</button>
-                    <button class="btn btn-secondary btn-sm" onclick="app.editStore('${s.id}')">Edit</button>
-                    <button class="btn btn-outline-danger btn-sm" onclick="app.deleteStore('${s.id}')">×</button>
+                <div class="store-actions-wrapper">
+                    <button class="btn btn-primary btn-sm btn-block-action" onclick="app.openStatement('${s.id}')">📜 Statement / Khata</button>
+                    <div class="store-sub-actions">
+                        <button class="btn btn-success btn-sm btn-sub-action" onclick="app.openPaymentModal('${s.id}')">+ Payment</button>
+                        <button class="btn btn-secondary btn-sm btn-sub-action" onclick="app.editStore('${s.id}')">✏️ Edit</button>
+                        <button class="btn btn-outline-danger btn-sm del-btn" onclick="app.deleteStore('${s.id}')" title="Delete Store">🗑️</button>
+                    </div>
                 </div>
             `;
             grid.appendChild(card);
@@ -1153,6 +1163,21 @@ class AquaTrackApp {
         if (!select) return;
         select.innerHTML = '';
 
+        const monthsSet = new Set();
+        (this.store.data.staffDeliveries || []).forEach(d => {
+            if (d.month) monthsSet.add(d.month);
+            else if (d.date) monthsSet.add(d.date.substring(0, 7));
+        });
+        (this.store.data.staffMonthlySalaries || []).forEach(m => {
+            if (m.month) monthsSet.add(m.month);
+        });
+        (this.store.data.sales || []).forEach(s => {
+            if (s.date) monthsSet.add(s.date.substring(0, 7));
+        });
+        (this.store.data.drumOrders || []).forEach(d => {
+            if (d.date) monthsSet.add(d.date.substring(0, 7));
+        });
+
         const now = new Date();
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth();
@@ -1161,15 +1186,25 @@ class AquaTrackApp {
             const d = new Date(currentYear, currentMonth + i, 1);
             const yyyy = d.getFullYear();
             const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const val = `${yyyy}-${mm}`;
+            monthsSet.add(`${yyyy}-${mm}`);
+        }
+
+        if (currentSelected) monthsSet.add(currentSelected);
+
+        const sortedMonths = Array.from(monthsSet).sort().reverse();
+        const curMonthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+
+        sortedMonths.forEach(val => {
+            const [y, m] = val.split('-').map(Number);
+            const d = new Date(y, m - 1, 1);
             const label = d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
             
             const opt = document.createElement('option');
             opt.value = val;
-            opt.textContent = label + (i === 0 ? ' (Current)' : '');
+            opt.textContent = label + (val === curMonthStr ? ' (Current)' : '');
             if (val === currentSelected) opt.selected = true;
             select.appendChild(opt);
-        }
+        });
     }
 
     onStaffSectionMonthChange() {
@@ -1324,10 +1359,12 @@ class AquaTrackApp {
                             <span>₹${paidAmount.toFixed(2)} / <strong style="color: ${balanceLeft > 0 ? '#ef4444' : '#10b981'}">₹${balanceLeft.toFixed(2)}</strong></span>
                         </div>
                     </div>
-                    <div class="store-actions">
-                        <button class="btn btn-primary btn-sm" style="flex: 1;" onclick="app.openStaffLedger('${s.id}', '${month}')">📜 View Ledger & Salary</button>
-                        <button class="btn btn-secondary btn-sm" onclick="app.editStaff('${s.id}')">Edit</button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="app.deleteStaff('${s.id}')">×</button>
+                    <div class="store-actions-wrapper">
+                        <button class="btn btn-primary btn-sm btn-block-action" onclick="app.openStaffLedger('${s.id}', '${month}')">📜 View Ledger & Salary</button>
+                        <div class="store-sub-actions">
+                            <button class="btn btn-secondary btn-sm btn-sub-action" onclick="app.editStaff('${s.id}')" title="Edit Staff">✏️ Edit Staff</button>
+                            <button class="btn btn-outline-danger btn-sm del-btn" onclick="app.deleteStaff('${s.id}')" title="Delete Staff">🗑️</button>
+                        </div>
                     </div>
                 `;
                 grid.appendChild(card);
@@ -1399,7 +1436,7 @@ class AquaTrackApp {
     }
 
     // ==========================================
-    // STAFF LEDGER & MONTHLY SALARY MODAL
+    // STAFF LEDGER & MONTHLY WORK LOG CONTROLLER
     // ==========================================
     openStaffLedger(id, month = null) {
         const staff = this.store.getStaff(id);
@@ -1408,12 +1445,12 @@ class AquaTrackApp {
         this.selectedLedgerStaffId = id;
         this.selectedLedgerMonth = month || this.selectedStaffMonth || this.getTodayStr().substring(0, 7);
 
-        document.getElementById('staffLedgerTitle').textContent = `🚚 ${staff.name} (${staff.role}) — Salary Structure & Ledger`;
+        document.getElementById('staffLedgerTitle').textContent = `${staff.name} (${staff.role}) — Work Log & Salary Structure`;
         document.getElementById('ledgerStaffId').value = staff.id;
 
         const roleBadge = document.getElementById('ledgerRoleBadge');
         if (roleBadge) {
-            roleBadge.innerHTML = `<span class="badge ${staff.role === 'Driver' ? 'badge-primary' : 'badge-info'}" style="font-size: 0.85rem;">${staff.role} (Commission: ₹${staff.role === 'Driver' ? '2' : '1'} / Box)</span>`;
+            roleBadge.innerHTML = `<span class="badge ${staff.role === 'Driver' ? 'badge-primary' : 'badge-info'}" style="font-size: 0.85rem; padding: 6px 12px;">🚚 ${staff.role} (Commission: ₹${staff.role === 'Driver' ? '2' : '1'} / Box)</span>`;
         }
 
         this.populateStaffMonthDropdown('ledgerMonthSelect', this.selectedLedgerMonth);
@@ -1429,51 +1466,141 @@ class AquaTrackApp {
         }
     }
 
+    prevLedgerMonth() {
+        const [y, m] = this.selectedLedgerMonth.split('-').map(Number);
+        const d = new Date(y, m - 2, 1);
+        this.selectedLedgerMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        this.populateStaffMonthDropdown('ledgerMonthSelect', this.selectedLedgerMonth);
+        this.loadLedgerMonthData();
+    }
+
+    nextLedgerMonth() {
+        const [y, m] = this.selectedLedgerMonth.split('-').map(Number);
+        const d = new Date(y, m, 1);
+        this.selectedLedgerMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        this.populateStaffMonthDropdown('ledgerMonthSelect', this.selectedLedgerMonth);
+        this.loadLedgerMonthData();
+    }
+
     loadLedgerMonthData() {
         const staffId = this.selectedLedgerStaffId;
         const month = this.selectedLedgerMonth;
         const staff = this.store.getStaff(staffId);
         if (!staff) return;
 
+        const [y, m] = month.split('-').map(Number);
+        const monthDate = new Date(y, m - 1, 1);
+        const monthName = monthDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+        
+        const monthLabelEl = document.getElementById('ledgerSelectedMonthLabel');
+        if (monthLabelEl) monthLabelEl.textContent = monthName;
+
         const monthSalary = this.store.getStaffMonthlySalary(staffId, month);
         const deliveries = this.store.getStaffDeliveries(staffId, month);
 
-        const totalBoxes = deliveries.reduce((sum, d) => sum + (d.boxCount || 0), 0);
-        const totalCommission = deliveries.reduce((sum, d) => sum + (d.totalCommission || 0), 0);
+        const totalTrips = deliveries.length;
+        const totalBoxes = deliveries.reduce((sum, d) => sum + (parseFloat(d.boxCount) || 0), 0);
+        const totalCommission = deliveries.reduce((sum, d) => sum + (parseFloat(d.totalCommission) || 0), 0);
+        const totalVolume = deliveries.reduce((sum, d) => sum + (parseFloat(d.orderAmount) || 0), 0);
 
-        document.getElementById('ledgerFixedSalaryInput').value = monthSalary.fixedSalary !== undefined ? monthSalary.fixedSalary : (staff.baseFixedSalary || 0);
-        document.getElementById('ledgerCommission').textContent = '₹' + totalCommission.toFixed(2);
-        document.getElementById('ledgerCommissionBoxes').textContent = `${totalBoxes} boxes delivered in ${month}`;
-        document.getElementById('ledgerAdvSalary').value = monthSalary.advanceSalary || 0;
-        document.getElementById('ledgerExtraIncome').value = monthSalary.extraIncome || 0;
+        // Update KPI Badges
+        const kpiTrips = document.getElementById('ledgerKpiTrips');
+        if (kpiTrips) kpiTrips.textContent = `${totalTrips} ${totalTrips === 1 ? 'Trip' : 'Trips'}`;
 
-        document.getElementById('ledgerPaidAmount').value = monthSalary.paidAmount || '';
-        document.getElementById('ledgerPaidDate').value = monthSalary.paidDate || this.getTodayStr();
-        document.getElementById('ledgerPaymentMode').value = monthSalary.paymentMode || 'Cash';
-        document.getElementById('ledgerPaymentNote').value = monthSalary.notes || '';
+        const kpiTripsSub = document.getElementById('ledgerKpiTripsSub');
+        if (kpiTripsSub) kpiTripsSub.textContent = `In ${monthName}`;
+
+        const kpiBoxes = document.getElementById('ledgerCommissionBoxes');
+        if (kpiBoxes) kpiBoxes.textContent = `${totalBoxes.toFixed(1)} ${staff.role === 'Driver' ? 'Boxes/Drums' : 'Boxes'}`;
+
+        const kpiVolume = document.getElementById('ledgerKpiVolume');
+        if (kpiVolume) kpiVolume.textContent = '₹' + totalVolume.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+
+        const kpiComm = document.getElementById('ledgerCommission');
+        if (kpiComm) kpiComm.textContent = '+₹' + totalCommission.toFixed(2);
+
+        const rateHint = document.getElementById('ledgerRateHint');
+        if (rateHint) rateHint.textContent = `${staff.role}: ₹${staff.role === 'Driver' ? '2' : '1'} / Box`;
+
+        // Monthly Fixed Salary Fields
+        const fixedSalaryInput = document.getElementById('ledgerFixedSalaryInput');
+        if (fixedSalaryInput) {
+            fixedSalaryInput.value = monthSalary.fixedSalary !== undefined ? monthSalary.fixedSalary : (staff.baseFixedSalary || 0);
+        }
+        const advInput = document.getElementById('ledgerAdvSalary');
+        if (advInput) advInput.value = monthSalary.advanceSalary || 0;
+
+        const extraInput = document.getElementById('ledgerExtraIncome');
+        if (extraInput) extraInput.value = monthSalary.extraIncome || 0;
+
+        const paidInput = document.getElementById('ledgerPaidAmount');
+        if (paidInput) paidInput.value = monthSalary.paidAmount || '';
+
+        const paidDateInput = document.getElementById('ledgerPaidDate');
+        if (paidDateInput) paidDateInput.value = monthSalary.paidDate || this.getTodayStr();
+
+        const payModeInput = document.getElementById('ledgerPaymentMode');
+        if (payModeInput) payModeInput.value = monthSalary.paymentMode || 'Cash';
+
+        const payNoteInput = document.getElementById('ledgerPaymentNote');
+        if (payNoteInput) payNoteInput.value = monthSalary.notes || '';
 
         this.calcStaffLedgerTotals();
 
+        // Render Work Log Table Body & Footer
         const tbody = document.getElementById('staffLedgerBody');
-        tbody.innerHTML = '';
-        if (deliveries.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 16px; color: var(--text-muted);">No delivery trips recorded in this month. Recorded deliveries from Store Sales will show here automatically.</td></tr>';
-        } else {
-            deliveries.forEach(d => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${d.date}</td>
-                    <td><strong>${d.storeName || 'Manual Entry'}</strong></td>
-                    <td><span class="badge badge-info">${d.boxCount} Boxes</span></td>
-                    <td>₹${(d.ratePerBox || (staff.role === 'Driver' ? 2 : 1)).toFixed(2)}</td>
-                    <td style="color:#10b981; font-weight:bold;">+₹${(d.totalCommission || 0).toFixed(2)}</td>
-                    <td><span class="badge badge-secondary" style="font-size: 0.72rem;">${d.source || 'Sale Delivery'}</span></td>
-                    <td>
-                        <button class="btn btn-outline-danger btn-sm" onclick="app.deleteStaffDelivery('${d.id}')" title="Delete Trip">×</button>
-                    </td>
+        const tfoot = document.getElementById('staffLedgerFoot');
+        if (tbody) {
+            tbody.innerHTML = '';
+            if (deliveries.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align:center; padding: 28px 14px; color: var(--text-muted);">
+                            <div style="font-size: 1.1rem; margin-bottom: 6px; color: #38bdf8;">📭 No work / delivery logs recorded in ${monthName}</div>
+                            <div style="font-size: 0.82rem; margin-bottom: 12px;">Deliveries from Store Sales & 20L Drum Orders will appear here automatically, or you can record a delivery trip manually.</div>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="app.openManualTripModal()">+ Add Delivery Trip for ${monthName}</button>
+                        </td>
+                    </tr>
                 `;
-                tbody.appendChild(tr);
-            });
+                if (tfoot) tfoot.innerHTML = '';
+            } else {
+                deliveries.sort((a, b) => new Date(b.date || '') - new Date(a.date || ''));
+                deliveries.forEach(d => {
+                    const tr = document.createElement('tr');
+                    const badgeClass = d.source === '20L Drum Delivery' ? 'badge-purple' : (d.source === 'Store Sale' ? 'badge-primary' : 'badge-info');
+                    const cargo = d.productsSummary || `${d.boxCount} Boxes Delivery`;
+                    const orderAmt = d.orderAmount ? '₹' + parseFloat(d.orderAmount).toFixed(2) : '-';
+                    const comm = parseFloat(d.totalCommission) || (parseFloat(d.boxCount || 0) * (parseFloat(d.ratePerBox) || (staff.role === 'Driver' ? 2 : 1)));
+                    
+                    tr.innerHTML = `
+                        <td><strong>${d.date || 'N/A'}</strong></td>
+                        <td><strong style="color: #f8fafc;">${d.storeName || 'Direct Customer'}</strong></td>
+                        <td style="color: var(--text-secondary); max-width: 220px; word-break: break-word;">${cargo}</td>
+                        <td><span class="badge badge-warning" style="font-weight: 700; font-size: 0.82rem;">${d.boxCount} Boxes</span></td>
+                        <td style="color: #38bdf8; font-weight: 600;">${orderAmt}</td>
+                        <td style="color: #10b981; font-weight: 700;">+₹${comm.toFixed(2)}</td>
+                        <td><span class="badge ${badgeClass}" style="font-size: 0.72rem;">${d.source || 'Delivery'}</span></td>
+                        <td>
+                            <button class="btn btn-outline-danger btn-sm" onclick="app.deleteStaffDelivery('${d.id}')" title="Delete Trip Record">🗑️</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                if (tfoot) {
+                    tfoot.innerHTML = `
+                        <tr>
+                            <td colspan="3" style="text-align: right; padding: 10px 14px; color: #38bdf8; font-size: 0.88rem;">
+                                <strong>TOTAL FOR ${monthName.toUpperCase()}:</strong>
+                            </td>
+                            <td style="color: #f59e0b; font-size: 0.95rem;">${totalBoxes.toFixed(1)} Boxes</td>
+                            <td style="color: #38bdf8; font-size: 0.95rem;">₹${totalVolume.toFixed(2)}</td>
+                            <td style="color: #10b981; font-size: 1.05rem;">+₹${totalCommission.toFixed(2)}</td>
+                            <td colspan="2" style="font-size: 0.78rem; color: var(--text-muted);">${totalTrips} Total Trips</td>
+                        </tr>
+                    `;
+                }
+            }
         }
 
         this.renderStaffMonthHistory(staffId);
@@ -1505,8 +1632,8 @@ class AquaTrackApp {
             const mSalary = this.store.getStaffMonthlySalary(staffId, m);
             const mDeliveries = this.store.getStaffDeliveries(staffId, m);
 
-            const mBoxes = mDeliveries.reduce((sum, d) => sum + (d.boxCount || 0), 0);
-            const mCommission = mDeliveries.reduce((sum, d) => sum + (d.totalCommission || 0), 0);
+            const mBoxes = mDeliveries.reduce((sum, d) => sum + (parseFloat(d.boxCount) || 0), 0);
+            const mCommission = mDeliveries.reduce((sum, d) => sum + (parseFloat(d.totalCommission) || 0), 0);
 
             const fixed = mSalary.fixedSalary !== undefined ? mSalary.fixedSalary : (staff.baseFixedSalary || 0);
             const adv = mSalary.advanceSalary || 0;
@@ -1524,16 +1651,26 @@ class AquaTrackApp {
             tr.innerHTML = `
                 <td><strong>${m}</strong> ${m === this.selectedLedgerMonth ? '<span class="badge badge-primary" style="font-size:0.65rem;">Active</span>' : ''}</td>
                 <td>₹${fixed.toFixed(2)}</td>
-                <td style="color:#10b981;">₹${mCommission.toFixed(2)} (${mBoxes} boxes)</td>
+                <td style="color:#10b981;">₹${mCommission.toFixed(2)} (${mBoxes.toFixed(0)} boxes)</td>
                 <td style="color:#38bdf8;">₹${extra.toFixed(2)}</td>
                 <td style="color:#f87171;">₹${adv.toFixed(2)}</td>
                 <td style="color:#10b981; font-weight:700;">₹${net.toFixed(2)}</td>
                 <td>₹${paid.toFixed(2)}</td>
                 <td style="color:${bal > 0 ? '#ef4444' : '#10b981'};">₹${bal.toFixed(2)}</td>
                 <td>${status}</td>
+                <td>
+                    <button class="btn btn-secondary btn-sm" onclick="app.switchLedgerMonth('${m}')" title="View this month work log">View 📜</button>
+                </td>
             `;
             tbody.appendChild(tr);
         });
+    }
+
+    switchLedgerMonth(month) {
+        this.selectedLedgerMonth = month;
+        const select = document.getElementById('ledgerMonthSelect');
+        if (select) select.value = month;
+        this.loadLedgerMonthData();
     }
 
     calcStaffLedgerTotals() {
@@ -1543,7 +1680,7 @@ class AquaTrackApp {
         if (!staff) return;
 
         const deliveries = this.store.getStaffDeliveries(staffId, month);
-        const totalCommission = deliveries.reduce((sum, d) => sum + (d.totalCommission || 0), 0);
+        const totalCommission = deliveries.reduce((sum, d) => sum + (parseFloat(d.totalCommission) || 0), 0);
 
         const fixed = parseFloat(document.getElementById('ledgerFixedSalaryInput')?.value) || 0;
         const adv = parseFloat(document.getElementById('ledgerAdvSalary')?.value) || 0;
@@ -1592,7 +1729,7 @@ class AquaTrackApp {
         const notes = document.getElementById('ledgerPaymentNote')?.value.trim();
 
         const deliveries = this.store.getStaffDeliveries(staffId, month);
-        const totalCommission = deliveries.reduce((sum, d) => sum + (d.totalCommission || 0), 0);
+        const totalCommission = deliveries.reduce((sum, d) => sum + (parseFloat(d.totalCommission) || 0), 0);
         const net = (fixed + totalCommission + extra) - adv;
 
         let status = 'Pending';
@@ -1617,27 +1754,61 @@ class AquaTrackApp {
         this.renderStaffMonthHistory(staffId);
     }
 
-    addManualCommission() {
+    openManualTripModal() {
         const staffId = this.selectedLedgerStaffId;
         const staff = this.store.getStaff(staffId);
         if (!staff) return;
 
-        const defaultRate = staff.role === 'Driver' ? 2 : 1;
-        const boxesStr = prompt(`Enter number of boxes delivered by ${staff.name} (${staff.role}):`, "20");
-        if (boxesStr === null) return;
-        const boxes = parseInt(boxesStr);
-        if (isNaN(boxes) || boxes <= 0) {
-            alert('Please enter a valid box count.');
-            return;
+        document.getElementById('manualTripForm')?.reset();
+        document.getElementById('manualTripModalTitle').textContent = `Add Delivery Trip — ${staff.name} (${staff.role})`;
+        
+        // Populate store datalist
+        const datalist = document.getElementById('tripStoreDatalist');
+        if (datalist) {
+            datalist.innerHTML = '';
+            this.store.getStores().forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.name;
+                datalist.appendChild(opt);
+            });
         }
 
-        const rateStr = prompt(`Enter per-box commission rate (₹):`, String(defaultRate));
-        if (rateStr === null) return;
-        const rate = parseFloat(rateStr) || defaultRate;
+        // Set date to today or 1st of selected ledger month
+        const nowMonth = this.getTodayStr().substring(0, 7);
+        if (this.selectedLedgerMonth === nowMonth) {
+            document.getElementById('tripDate').value = this.getTodayStr();
+        } else {
+            document.getElementById('tripDate').value = `${this.selectedLedgerMonth}-01`;
+        }
 
-        const storeName = prompt(`Enter Store Name / Customer (optional):`, "Manual Delivery Trip") || "Manual Delivery Trip";
-        const date = prompt(`Enter Delivery Date (YYYY-MM-DD):`, this.getTodayStr()) || this.getTodayStr();
+        const defaultRate = staff.role === 'Driver' ? 2 : 1;
+        document.getElementById('tripRatePerBox').value = defaultRate;
+        document.getElementById('tripBoxCount').value = 10;
+        document.getElementById('tripOrderAmount').value = '';
+        this.calcManualTripCommission();
+        this.openModal('manualTripModal');
+    }
+
+    calcManualTripCommission() {
+        const boxes = parseFloat(document.getElementById('tripBoxCount')?.value) || 0;
+        const rate = parseFloat(document.getElementById('tripRatePerBox')?.value) || 0;
+        const preview = document.getElementById('tripCommissionPreview');
+        if (preview) preview.textContent = '₹' + (boxes * rate).toFixed(2);
+    }
+
+    handleManualTripSubmit(e) {
+        e.preventDefault();
+        const staffId = this.selectedLedgerStaffId;
+        const staff = this.store.getStaff(staffId);
+        if (!staff) return;
+
+        const date = document.getElementById('tripDate')?.value || this.getTodayStr();
         const month = date.substring(0, 7);
+        const storeName = document.getElementById('tripStoreName')?.value.trim() || 'Direct Customer';
+        const products = document.getElementById('tripProducts')?.value.trim() || '';
+        const boxes = parseFloat(document.getElementById('tripBoxCount')?.value) || 0;
+        const rate = parseFloat(document.getElementById('tripRatePerBox')?.value) || (staff.role === 'Driver' ? 2 : 1);
+        const orderAmount = parseFloat(document.getElementById('tripOrderAmount')?.value) || 0;
 
         this.store.addStaffDelivery({
             staffId: staff.id,
@@ -1646,13 +1817,19 @@ class AquaTrackApp {
             date: date,
             month: month,
             storeName: storeName,
+            productsSummary: products || `${boxes} Boxes Delivery`,
             boxCount: boxes,
+            orderAmount: orderAmount,
             ratePerBox: rate,
             totalCommission: boxes * rate,
             source: 'Manual Entry'
         });
 
-        this.showToast(`Delivery log added: ${boxes} boxes @ ₹${rate}/box (+₹${boxes * rate})`, 'success');
+        this.showToast(`Trip recorded for ${staff.name}: ${boxes} boxes (+₹${(boxes * rate).toFixed(2)})`, 'success');
+        this.closeModal('manualTripModal');
+        
+        this.selectedLedgerMonth = month;
+        this.populateStaffMonthDropdown('ledgerMonthSelect', this.selectedLedgerMonth);
         this.loadLedgerMonthData();
         this.renderStaff();
     }
@@ -1942,30 +2119,95 @@ class AquaTrackApp {
             this.addSaleItemRow();
         }
 
+        // Clean extra helper rows back to 1 helper
+        const container = document.getElementById('driverRowsContainer');
+        if (container) {
+            const helperGroups = container.querySelectorAll('.helper-group');
+            helperGroups.forEach((hg, idx) => {
+                if (idx > 0) hg.remove();
+            });
+        }
+
         const drivers = this.store.getStaffList().filter(s => s.role === 'Driver');
         const helpers = this.store.getStaffList().filter(s => s.role === 'Helper');
-        if (drivers.length > 0 && document.getElementById('saleDriver1')) document.getElementById('saleDriver1').value = drivers[0].name;
-        if (helpers.length > 0 && document.getElementById('saleDriver2')) document.getElementById('saleDriver2').value = helpers[0].name;
+        this.populateStaffSelect('saleDriver1', 'Driver', drivers[0]?.name || '');
+        this.populateStaffSelect('saleDriver2', 'Helper', helpers[0]?.name || '');
 
         this.onSalePaymentStatusChange();
         this.calcSaleCalculations();
         this.openModal('saleModal');
     }
 
+    populateStaffSelect(selectEl, roleFilter = null, selectedValue = '') {
+        if (typeof selectEl === 'string') selectEl = document.getElementById(selectEl);
+        if (!selectEl) return;
+        
+        const staffList = this.store.getStaffList() || [];
+        const label = roleFilter ? (roleFilter === 'Driver' ? 'Driver' : 'Helper') : 'Staff';
+        
+        let html = `<option value="">-- Select ${label} --</option>`;
+        
+        const matching = roleFilter ? staffList.filter(s => s.role === roleFilter) : staffList;
+        const others = roleFilter ? staffList.filter(s => s.role !== roleFilter) : [];
+        
+        matching.forEach(s => {
+            const isSelected = selectedValue && s.name.trim().toLowerCase() === selectedValue.trim().toLowerCase() ? 'selected' : '';
+            html += `<option value="${s.name}" ${isSelected}>👤 ${s.name} (${s.role})</option>`;
+        });
+        
+        if (others.length > 0) {
+            html += `<optgroup label="Other Staff">`;
+            others.forEach(s => {
+                const isSelected = selectedValue && s.name.trim().toLowerCase() === selectedValue.trim().toLowerCase() ? 'selected' : '';
+                html += `<option value="${s.name}" ${isSelected}>👤 ${s.name} (${s.role})</option>`;
+            });
+            html += `</optgroup>`;
+        }
+        
+        selectEl.innerHTML = html;
+        if (selectedValue) {
+            selectEl.value = selectedValue;
+        }
+    }
+
     addHelperRow() {
         const container = document.getElementById('driverRowsContainer');
         if (!container) return;
-        const helperIndex = container.querySelectorAll('.helper-group').length + 2;
+        const helperIndex = container.querySelectorAll('.helper-group').length + 1;
         const div = document.createElement('div');
         div.className = 'form-group helper-group';
+        
+        const staffList = this.store.getStaffList() || [];
+        const helpers = staffList.filter(s => s.role === 'Helper');
+        const others = staffList.filter(s => s.role !== 'Helper');
+
+        let options = `<option value="">-- Select Helper --</option>`;
+        helpers.forEach(s => {
+            options += `<option value="${s.name}">👤 ${s.name} (${s.role})</option>`;
+        });
+        if (others.length > 0) {
+            options += `<optgroup label="Other Staff">`;
+            others.forEach(s => {
+                options += `<option value="${s.name}">👤 ${s.name} (${s.role})</option>`;
+            });
+            options += `</optgroup>`;
+        }
+
         div.innerHTML = `
             <label>Helper ${helperIndex}</label>
-            <div style="display:flex; gap: 5px;">
-                <input type="text" class="saleHelperInput" list="staffList" placeholder="Select or type helper name">
-                <button type="button" class="btn btn-outline-danger btn-sm" onclick="this.parentElement.parentElement.remove()" style="padding: 0 8px;">×</button>
+            <div style="display:flex; gap: 6px; align-items: center;">
+                <select class="form-control saleHelperSelect" style="flex: 1;">
+                    ${options}
+                </select>
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="this.parentElement.parentElement.remove()" style="padding: 0 10px; height: 38px; min-width: 32px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.1rem; border-radius: 8px;" title="Remove Helper">×</button>
             </div>
         `;
         container.appendChild(div);
+
+        // Auto-scroll container to the newly added helper and focus select
+        container.scrollTop = container.scrollHeight;
+        const newSelect = div.querySelector('select');
+        if (newSelect) newSelect.focus();
     }
 
     addSaleItemRow() {
@@ -1974,7 +2216,6 @@ class AquaTrackApp {
 
         const row = document.createElement('div');
         row.className = 'sale-item-row';
-        row.style.cssText = 'display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px;';
         
         let productOptions = '<option value="">-- Select Product --</option>';
         this.store.getProducts().forEach(p => {
@@ -1982,27 +2223,27 @@ class AquaTrackApp {
         });
 
         row.innerHTML = `
-            <div>
+            <div class="sale-row-col prod-col">
                 <label style="font-size:0.75rem;">Product</label>
                 <select class="itemProductSelect" onchange="app.onSaleRowProductChange(this)">${productOptions}</select>
             </div>
-            <div>
+            <div class="sale-row-col">
                 <label style="font-size:0.75rem;">Boxes</label>
                 <input type="number" min="0" step="any" class="itemBoxInput" placeholder="0" oninput="app.onSaleRowBoxInput(this)">
             </div>
-            <div>
+            <div class="sale-row-col">
                 <label style="font-size:0.75rem;">Total Units</label>
                 <input type="number" min="1" class="itemQtyInput" placeholder="0" oninput="app.onSaleRowUnitInput(this)">
             </div>
-            <div>
+            <div class="sale-row-col">
                 <label style="font-size:0.75rem;">Rate (₹/Unit)</label>
                 <input type="number" step="0.01" class="itemRateInput" oninput="app.calcSaleCalculations()">
             </div>
-            <div>
+            <div class="sale-row-col">
                 <label style="font-size:0.75rem;">Line Total</label>
                 <div class="itemLineTotal" style="font-weight:700; color:#38bdf8; font-size:0.9rem; margin-top:6px;">₹0.00</div>
             </div>
-            <div style="padding-top: 14px;">
+            <div class="sale-row-col del-col" style="padding-top: 14px;">
                 <button type="button" class="btn btn-outline-danger btn-sm" onclick="this.parentElement.parentElement.remove(); app.calcSaleCalculations();">×</button>
             </div>
         `;
@@ -2087,12 +2328,12 @@ class AquaTrackApp {
         const sid = document.getElementById('saleStore')?.value;
         const store = this.store.getStore(sid);
         const status = document.getElementById('salePaymentStatus')?.value;
-        const driverName = document.getElementById('saleDriver1')?.value.trim();
+        const driverName = document.getElementById('saleDriver1')?.value.trim() || '';
         
-        const helperInputs = document.querySelectorAll('.saleHelperInput');
+        const helperSelects = document.querySelectorAll('.saleHelperSelect');
         const helperNames = [];
-        helperInputs.forEach(input => {
-            if (input.value.trim()) helperNames.push(input.value.trim());
+        helperSelects.forEach(select => {
+            if (select.value.trim()) helperNames.push(select.value.trim());
         });
 
         const rows = document.querySelectorAll('.sale-item-row');
@@ -2102,6 +2343,8 @@ class AquaTrackApp {
         }
 
         let totalBoxesAllProducts = 0;
+        let totalSaleAmount = 0;
+        const productsSummaryList = [];
 
         rows.forEach(row => {
             const select = row.querySelector('.itemProductSelect');
@@ -2116,6 +2359,11 @@ class AquaTrackApp {
             const profit = (rate - buyPrice) * qty;
 
             totalBoxesAllProducts += Math.max(0, boxes);
+            totalSaleAmount += lineTotal;
+
+            if (p && qty > 0) {
+                productsSummaryList.push(`${p.name} ${p.size ? '(' + p.size + ')' : ''} × ${boxes.toFixed(1)}b`);
+            }
 
             this.store.addSale({
                 date: date,
@@ -2138,6 +2386,7 @@ class AquaTrackApp {
 
         const month = date.substring(0, 7);
         const storeLabel = store ? store.name : 'Store Delivery';
+        const prodsSummary = productsSummaryList.join(', ') || `${totalBoxesAllProducts.toFixed(1)} Boxes Delivery`;
 
         // Auto-credit Driver Commission: ₹2 per box
         if (driverName && totalBoxesAllProducts > 0) {
@@ -2152,9 +2401,11 @@ class AquaTrackApp {
                 date: date,
                 month: month,
                 storeName: storeLabel,
-                boxCount: Math.round(totalBoxesAllProducts),
+                productsSummary: prodsSummary,
+                boxCount: Math.round(totalBoxesAllProducts * 10) / 10,
+                orderAmount: totalSaleAmount,
                 ratePerBox: 2,
-                totalCommission: Math.round(totalBoxesAllProducts) * 2,
+                totalCommission: (Math.round(totalBoxesAllProducts * 10) / 10) * 2,
                 source: 'Store Sale'
             });
         }
@@ -2173,9 +2424,11 @@ class AquaTrackApp {
                     date: date,
                     month: month,
                     storeName: storeLabel,
-                    boxCount: Math.round(totalBoxesAllProducts),
+                    productsSummary: prodsSummary,
+                    boxCount: Math.round(totalBoxesAllProducts * 10) / 10,
+                    orderAmount: totalSaleAmount,
                     ratePerBox: 1,
-                    totalCommission: Math.round(totalBoxesAllProducts) * 1,
+                    totalCommission: (Math.round(totalBoxesAllProducts * 10) / 10) * 1,
                     source: 'Store Sale'
                 });
             }
@@ -2213,8 +2466,8 @@ class AquaTrackApp {
         
         const drivers = this.store.getStaffList().filter(s => s.role === 'Driver');
         const helpers = this.store.getStaffList().filter(s => s.role === 'Helper');
-        if (drivers.length > 0 && document.getElementById('drumDriver1')) document.getElementById('drumDriver1').value = drivers[0].name;
-        if (helpers.length > 0 && document.getElementById('drumDriver2')) document.getElementById('drumDriver2').value = helpers[0].name;
+        this.populateStaffSelect('drumDriver1', 'Driver', drivers[0]?.name || '');
+        this.populateStaffSelect('drumDriver2', 'Helper', helpers[0]?.name || '');
 
         document.getElementById('drumQty').value = 10;
         document.getElementById('drumRate').value = 35;
@@ -2248,6 +2501,7 @@ class AquaTrackApp {
         const status = document.getElementById('drumStatus')?.value;
         const driver1 = document.getElementById('drumDriver1')?.value.trim();
         const driver2 = document.getElementById('drumDriver2')?.value.trim();
+        const orderTotal = qty * rate;
 
         this.store.addDrumOrder({
             date: date,
@@ -2255,14 +2509,58 @@ class AquaTrackApp {
             customer: customerName,
             qty: qty,
             rate: rate,
-            total: qty * rate,
+            total: orderTotal,
             emptiesReturned: empties,
             status: status,
             driver1: driver1,
             driver2: driver2
         });
 
-        this.showToast('20L Drum order added!', 'success');
+        // Auto-credit Driver 1 & Driver 2 for 20L Drum Delivery
+        const month = date.substring(0, 7);
+        if (driver1 && qty > 0) {
+            let staff1 = this.store.getStaffByName(driver1);
+            if (!staff1) {
+                staff1 = this.store.addStaff({ name: driver1, role: 'Driver', baseFixedSalary: 12000 });
+            }
+            this.store.addStaffDelivery({
+                staffId: staff1.id,
+                staffName: staff1.name,
+                role: 'Driver',
+                date: date,
+                month: month,
+                storeName: customerName,
+                productsSummary: `20L Water Drum (${qty} units)`,
+                boxCount: qty,
+                orderAmount: orderTotal,
+                ratePerBox: 2,
+                totalCommission: qty * 2,
+                source: '20L Drum Delivery'
+            });
+        }
+
+        if (driver2 && qty > 0) {
+            let staff2 = this.store.getStaffByName(driver2);
+            if (!staff2) {
+                staff2 = this.store.addStaff({ name: driver2, role: 'Helper', baseFixedSalary: 9000 });
+            }
+            this.store.addStaffDelivery({
+                staffId: staff2.id,
+                staffName: staff2.name,
+                role: 'Helper',
+                date: date,
+                month: month,
+                storeName: customerName,
+                productsSummary: `20L Water Drum (${qty} units)`,
+                boxCount: qty,
+                orderAmount: orderTotal,
+                ratePerBox: 1,
+                totalCommission: qty * 1,
+                source: '20L Drum Delivery'
+            });
+        }
+
+        this.showToast('20L Drum order added! Driver & Helper trip commissions updated.', 'success');
         this.closeModal('drumOrderModal');
         this.renderAll();
     }

@@ -8,17 +8,23 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260927_3">
 </head>
 <body>
+    <!-- Sidebar Backdrop for Mobile -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="app.toggleSidebar(false)"></div>
+
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
-            <div class="brand-icon">💧</div>
-            <div class="brand-text">
-                <h1>AquaTrack</h1>
-                <span>Pro ERP</span>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="brand-icon">💧</div>
+                <div class="brand-text">
+                    <h1>AquaTrack</h1>
+                    <span>Pro ERP</span>
+                </div>
             </div>
+            <button class="mobile-sidebar-close" id="sidebarCloseBtn" onclick="app.toggleSidebar(false)" aria-label="Close Sidebar">&times;</button>
         </div>
         
         <nav class="sidebar-nav">
@@ -964,27 +970,23 @@
                             </label>
                             <button type="button" class="btn btn-secondary btn-sm" onclick="app.addHelperRow()">+ Add Helper</button>
                         </div>
-                        <div class="form-row" id="driverRowsContainer">
+                        <div class="driver-rows-container" id="driverRowsContainer">
                             <div class="form-group">
                                 <label>Driver (Primary)</label>
-                                <input type="text" id="saleDriver1" list="staffList" placeholder="Select or type driver name">
+                                <select id="saleDriver1" class="form-control">
+                                    <option value="">-- Select Driver --</option>
+                                </select>
                             </div>
                             <div class="form-group helper-group">
                                 <label>Helper 1</label>
-                                <div style="display:flex; gap: 5px;">
-                                    <input type="text" class="saleHelperInput" id="saleDriver2" list="staffList" placeholder="Select or type helper name">
-                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="this.parentElement.parentElement.remove()" style="padding: 0 8px;">×</button>
+                                <div style="display:flex; gap: 6px; align-items: center;">
+                                    <select class="form-control saleHelperSelect" id="saleDriver2" style="flex: 1;">
+                                        <option value="">-- Select Helper --</option>
+                                    </select>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="this.parentElement.parentElement.remove()" style="padding: 0 10px; height: 38px; min-width: 32px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.1rem; border-radius: 8px;" title="Remove Helper">×</button>
                                 </div>
                             </div>
                         </div>
-                        <datalist id="staffList">
-                            <option value="Rajesh Kumar"></option>
-                            <option value="Suresh Patel"></option>
-                            <option value="Mukesh"></option>
-                            <option value="Sonu"></option>
-                            <option value="Vikas Yadav"></option>
-                            <option value="Anand"></option>
-                        </datalist>
                     </div>
 
                     <div class="store-order-box" style="margin-top: 10px;">
@@ -1069,11 +1071,15 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Driver 1 (Primary Driver)</label>
-                                <input type="text" id="drumDriver1" placeholder="e.g. Vikas Yadav">
+                                <select id="drumDriver1" class="form-control">
+                                    <option value="">-- Select Driver --</option>
+                                </select>
                             </div>
                             <div class="form-group">
                                 <label>Driver 2 (Helper / Assistant)</label>
-                                <input type="text" id="drumDriver2" placeholder="e.g. Sonu (Helper)">
+                                <select id="drumDriver2" class="form-control">
+                                    <option value="">-- Select Helper --</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -1406,59 +1412,119 @@
 
     <!-- MODAL: STAFF LEDGER (COMMISSIONS & SALARY) -->
     <div class="modal-overlay" id="staffLedgerModal">
-        <div class="modal-box large">
+        <div class="modal-box large" style="max-width: 960px;">
             <div class="modal-header">
-                <h3 class="modal-title" id="staffLedgerTitle">Staff Salary & Ledger</h3>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.4rem;">🚚</span>
+                    <div>
+                        <h3 class="modal-title" id="staffLedgerTitle">Staff Salary & Work Ledger</h3>
+                        <div style="font-size: 0.78rem; color: var(--text-secondary);">Monthly performance log, delivery commission calculations & salary settlements</div>
+                    </div>
+                </div>
                 <button class="close-btn" onclick="app.closeModal('staffLedgerModal')">&times;</button>
             </div>
-            <div class="modal-body" style="background: var(--bg-dark); gap: 16px;">
+            <div class="modal-body" style="gap: 16px;">
                 <input type="hidden" id="ledgerStaffId">
                 
-                <!-- Month Switcher for Ledger Modal -->
-                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 0.88rem; font-weight: 700; color: #38bdf8;">📅 Select Salary Month:</span>
-                        <select id="ledgerMonthSelect" onchange="app.onLedgerMonthChange()" style="width: auto; padding: 4px 10px; font-weight: 700;"></select>
+                <!-- Month Switcher & Quick Filter Bar -->
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.7); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid rgba(56, 189, 248, 0.25); flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <span style="font-size: 0.88rem; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                            <span>📅 Work Month:</span>
+                        </span>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="app.prevLedgerMonth()" title="Previous Month">◀</button>
+                            <select id="ledgerMonthSelect" onchange="app.onLedgerMonthChange()" style="width: auto; padding: 6px 14px; font-weight: 700; font-size: 0.9rem;"></select>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="app.nextLedgerMonth()" title="Next Month">▶</button>
+                        </div>
                     </div>
                     <div id="ledgerRoleBadge"></div>
                 </div>
 
-                <!-- Live Salary Structure Cards for Selected Month -->
-                <div class="staff-salary-summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;">
-                    <div class="flow-stat-box">
-                        <div class="flow-stat-label">Fixed Salary (₹)</div>
-                        <input type="number" id="ledgerFixedSalaryInput" style="width: 100%; margin-top: 4px; padding: 6px; font-weight: 700; font-size: 1rem;" oninput="app.calcStaffLedgerTotals()">
+                <!-- Monthly Work Summary KPI Badges -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
+                    <div class="flow-stat-box" style="padding: 12px 14px;">
+                        <div class="flow-stat-label">🚚 Total Month Trips</div>
+                        <div class="flow-stat-value" id="ledgerKpiTrips" style="color: #38bdf8; font-size: 1.2rem;">0 Trips</div>
+                        <div style="font-size: 0.72rem; color: var(--text-muted);" id="ledgerKpiTripsSub">Store & drum deliveries</div>
                     </div>
-                    <div class="flow-stat-box">
-                        <div class="flow-stat-label">Earned Commission</div>
-                        <div class="flow-stat-value" id="ledgerCommission" style="color:#10b981; font-size: 1.15rem; margin-top: 6px;">₹0</div>
-                        <div style="font-size: 0.72rem; color: var(--text-muted);" id="ledgerCommissionBoxes">0 boxes delivered</div>
+                    <div class="flow-stat-box" style="padding: 12px 14px;">
+                        <div class="flow-stat-label">📦 Total Boxes / Drums</div>
+                        <div class="flow-stat-value" id="ledgerCommissionBoxes" style="color: #f59e0b; font-size: 1.2rem;">0 Boxes</div>
+                        <div style="font-size: 0.72rem; color: var(--text-muted);">Delivered volume</div>
                     </div>
-                    <div class="flow-stat-box">
-                        <div class="flow-stat-label">Advance Salary (Deduction)</div>
-                        <input type="number" id="ledgerAdvSalary" placeholder="0" style="width: 100%; margin-top: 4px; padding: 6px; color: #f87171;" oninput="app.calcStaffLedgerTotals()">
+                    <div class="flow-stat-box" style="padding: 12px 14px;">
+                        <div class="flow-stat-label">💰 Handled Order Value</div>
+                        <div class="flow-stat-value" id="ledgerKpiVolume" style="color: #10b981; font-size: 1.2rem;">₹0.00</div>
+                        <div style="font-size: 0.72rem; color: var(--text-muted);">Sales value moved</div>
                     </div>
-                    <div class="flow-stat-box">
-                        <div class="flow-stat-label">Extra Income / Bonus</div>
-                        <input type="number" id="ledgerExtraIncome" placeholder="0" style="width: 100%; margin-top: 4px; padding: 6px; color: #38bdf8;" oninput="app.calcStaffLedgerTotals()">
+                    <div class="flow-stat-box" style="padding: 12px 14px;">
+                        <div class="flow-stat-label">💵 Earned Commission</div>
+                        <div class="flow-stat-value" id="ledgerCommission" style="color: #10b981; font-size: 1.2rem;">+₹0.00</div>
+                        <div style="font-size: 0.72rem; color: var(--text-muted);" id="ledgerRateHint">Driver ₹2 | Helper ₹1</div>
                     </div>
-                </div>
-                
-                <!-- Net Payable Banner -->
-                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(16, 185, 129, 0.12); padding: 14px 18px; border-radius: 8px; border: 1px solid var(--success);">
-                    <div>
-                        <h4 style="margin:0; color:#10b981; font-size:1.15rem;">Net Payable for This Month</h4>
-                        <div style="font-size:0.8rem; color:var(--text-muted);">(Fixed Salary + Commission + Extra Income - Advance Salary)</div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div id="ledgerNetPayable" style="font-size: 1.6rem; font-weight: 800; color: #10b981;">₹0.00</div>
+                    <div class="flow-stat-box" style="padding: 12px 14px;">
+                        <div class="flow-stat-label">💼 Net Month Salary</div>
+                        <div class="flow-stat-value" id="ledgerNetPayable" style="color: #38bdf8; font-size: 1.2rem;">₹0.00</div>
+                        <div style="font-size: 0.72rem; color: var(--text-muted);">Fixed + Comm + Extra - Adv</div>
                     </div>
                 </div>
 
-                <!-- Salary Payout Entry -->
-                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
-                    <h4 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #a5b4fc;">💵 Record Salary Payout / Settlement</h4>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; align-items: flex-end;">
+                <!-- Monthly Work Log & Delivery Table Section -->
+                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h4 style="margin: 0; font-size: 1rem; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                                <span>📋 Day-by-Day Work & Delivery Log (<span id="ledgerSelectedMonthLabel">Month</span>)</span>
+                            </h4>
+                            <div style="font-size: 0.78rem; color: var(--text-muted);">Auto-recorded trips from Store Sales & 20L Drum Orders + Manual Delivery Logs</div>
+                        </div>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="app.openManualTripModal()">+ Add Delivery Trip</button>
+                    </div>
+
+                    <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date & Time</th>
+                                    <th>Store / Customer</th>
+                                    <th>Products / Cargo Delivered</th>
+                                    <th>Boxes / Drums</th>
+                                    <th>Order Value (₹)</th>
+                                    <th>Commission Earned</th>
+                                    <th>Source</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="staffLedgerBody"></tbody>
+                            <tfoot id="staffLedgerFoot" style="background: rgba(0,0,0,0.4); font-weight: 700; border-top: 2px solid var(--border-color);"></tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Monthly Fixed Salary Structure & Adjustments -->
+                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                    <h4 style="margin: 0 0 12px 0; font-size: 0.95rem; color: #a5b4fc;">⚙️ Monthly Salary Structure & Advance Adjustments</h4>
+                    <div class="staff-salary-summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px;">
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Fixed Monthly Base (₹)</div>
+                            <input type="number" id="ledgerFixedSalaryInput" style="width: 100%; margin-top: 4px; padding: 7px; font-weight: 700; font-size: 1rem;" oninput="app.calcStaffLedgerTotals()">
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Advance Salary / Deduction (₹)</div>
+                            <input type="number" id="ledgerAdvSalary" placeholder="0" style="width: 100%; margin-top: 4px; padding: 7px; color: #f87171;" oninput="app.calcStaffLedgerTotals()">
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Extra Bonus / Incentive (₹)</div>
+                            <input type="number" id="ledgerExtraIncome" placeholder="0" style="width: 100%; margin-top: 4px; padding: 7px; color: #38bdf8;" oninput="app.calcStaffLedgerTotals()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Salary Payout & Settlement Entry -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                    <h4 style="margin: 0 0 12px 0; font-size: 0.95rem; color: #34d399;">💵 Record Salary Settlement / Payout</h4>
+                    <div class="salary-payout-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: flex-end;">
                         <div>
                             <label style="font-size:0.75rem;">Amount Paid (₹):</label>
                             <input type="number" id="ledgerPaidAmount" placeholder="0.00" oninput="app.calcStaffLedgerTotals()">
@@ -1479,72 +1545,99 @@
                             <label style="font-size:0.75rem;">Notes / Remarks:</label>
                             <input type="text" id="ledgerPaymentNote" placeholder="e.g. Cleared via UPI">
                         </div>
-                        <div>
-                            <button type="button" class="btn btn-success" style="width: 100%; height: 42px;" onclick="app.saveStaffMonthlySalary()">💾 Save Month Salary</button>
+                        <div style="min-width: 160px;">
+                            <button type="button" class="btn btn-success" style="width: 100%; height: 42px; font-weight: 700; white-space: normal; padding: 6px 12px; font-size: 0.85rem;" onclick="app.saveStaffMonthlySalary()">💾 Save Month Salary</button>
                         </div>
                     </div>
-                    <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.82rem; color: var(--text-muted);">
-                        <span>Status: <strong id="ledgerMonthStatusBadge" class="badge badge-warning">Pending</strong></span>
-                        <span>Balance Left to Pay: <strong id="ledgerMonthBalanceLeft" style="color:#ef4444;">₹0.00</strong></span>
+                    <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.84rem; color: var(--text-muted); flex-wrap: wrap; gap: 8px;">
+                        <span>Payment Status: <strong id="ledgerMonthStatusBadge" class="badge badge-warning">Pending</strong></span>
+                        <span>Balance Left to Pay: <strong id="ledgerMonthBalanceLeft" style="color:#ef4444; font-size: 0.95rem;">₹0.00</strong></span>
                     </div>
-                </div>
-
-                <!-- Month Delivery / Trips Ledger Table -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
-                    <div>
-                        <h4 style="margin: 0; font-size: 0.95rem;">📦 Delivery Trips & Commission Logs (This Month)</h4>
-                        <div style="font-size: 0.78rem; color: var(--text-muted);">Driver: ₹2 / Box | Helper: ₹1 / Box (Auto-updated from Sales & manual trips)</div>
-                    </div>
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="app.addManualCommission()">+ Add Delivery Trip</button>
-                </div>
-                <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Store Name / Notes</th>
-                                <th>Boxes Delivered</th>
-                                <th>Rate / Box</th>
-                                <th>Commission</th>
-                                <th>Source</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="staffLedgerBody"></tbody>
-                    </table>
                 </div>
 
                 <!-- Full Salary History Table for this Staff across all months -->
-                <h4 style="margin: 12px 0 6px 0; font-size: 0.95rem; color: #38bdf8;">📅 All Months Salary Structure History</h4>
-                <div class="table-responsive" style="max-height: 180px; overflow-y: auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Month</th>
-                                <th>Fixed Salary</th>
-                                <th>Commission (Trips)</th>
-                                <th>Extra</th>
-                                <th>Advance</th>
-                                <th>Net Payable</th>
-                                <th>Paid</th>
-                                <th>Balance</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="staffMonthHistoryBody"></tbody>
-                    </table>
+                <div style="background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 0.95rem; color: #38bdf8;">📅 All Months Historical Summary</h4>
+                    <div class="table-responsive" style="max-height: 180px; overflow-y: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Month</th>
+                                    <th>Fixed Salary</th>
+                                    <th>Commission (Trips)</th>
+                                    <th>Extra</th>
+                                    <th>Advance</th>
+                                    <th>Net Payable</th>
+                                    <th>Paid</th>
+                                    <th>Balance</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="staffMonthHistoryBody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="app.closeModal('staffLedgerModal')">Close</button>
+                <button type="button" class="btn btn-secondary" onclick="app.closeModal('staffLedgerModal')">Close Window</button>
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD MANUAL DELIVERY TRIP / WORK LOG -->
+    <div class="modal-overlay" id="manualTripModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="modal-title" id="manualTripModalTitle">Add Delivery Trip</h3>
+                <button class="close-btn" onclick="app.closeModal('manualTripModal')">&times;</button>
+            </div>
+            <form id="manualTripForm" onsubmit="app.handleManualTripSubmit(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Delivery Date *</label>
+                        <input type="date" id="tripDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Store / Customer Name *</label>
+                        <input type="text" id="tripStoreName" list="tripStoreDatalist" required placeholder="e.g. Metro Mart / City Store">
+                        <datalist id="tripStoreDatalist"></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label>Products / Description</label>
+                        <input type="text" id="tripProducts" placeholder="e.g. 20L Drum x 20 / 500ml Water x 15 Boxes">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Boxes / Drums Quantity *</label>
+                            <input type="number" id="tripBoxCount" min="1" step="any" required placeholder="10" oninput="app.calcManualTripCommission()">
+                        </div>
+                        <div class="form-group">
+                            <label>Rate / Box (₹) *</label>
+                            <input type="number" id="tripRatePerBox" min="0" step="0.5" required value="2" oninput="app.calcManualTripCommission()">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Total Order Amount / Billed (₹)</label>
+                        <input type="number" id="tripOrderAmount" min="0" step="any" placeholder="0.00">
+                    </div>
+                    <div class="calc-preview-card" style="border-radius: 12px; margin-top: 4px;">
+                        <span class="label">Total Commission Earned:</span>
+                        <span class="val" id="tripCommissionPreview">₹0.00</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('manualTripModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">+ Record Delivery Trip</button>
+                </div>
+            </form>
         </div>
     </div>
 
     <!-- Toast Notification Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="app.js?v=20260927_3"></script>
+    <script src="app.js?v=20260927_10"></script>
     <script>
         // Universal modal closer & safety bridge
         document.addEventListener('click', function(e) {
