@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260927_17">
+    <link rel="stylesheet" href="styles.css?v=20260927_18">
 </head>
 <body>
     <!-- Sidebar Backdrop for Mobile -->
@@ -55,6 +55,10 @@
             <a href="#" class="nav-item" data-section="staff" id="nav-staff">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 <span>Drivers & Staff</span>
+            </a>
+            <a href="#" class="nav-item" data-section="trucks" id="nav-trucks">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                <span>Trucks & Logistics</span>
             </a>
             <a href="#" class="nav-item" data-section="daily" id="nav-daily">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3V21H21M7 14L11 10L15 14L20 8"/></svg>
@@ -351,15 +355,44 @@
                         <button class="btn btn-primary" onclick="app.openSaleModal()">+ Record New Sale</button>
                     </div>
 
-                    <div class="filter-bar">
-                        <div class="search-input-wrap">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21L16.65 16.65"/></svg>
-                            <input type="text" id="saleSearch" placeholder="Search by store, product, or driver..." oninput="app.renderSales()">
+                    <div class="drum-summary-cards" style="margin-bottom: 20px;">
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Orders in Period</div>
+                            <div class="flow-stat-value" id="saleTotalOrdersCount" style="color: #38bdf8;">0 Orders</div>
                         </div>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <label style="margin: 0;">Date:</label>
-                            <input type="date" id="saleDateFilter" style="width: auto;" onchange="app.renderSales()">
-                            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('saleDateFilter').value=''; app.renderSales();">Clear</button>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Total Sales Revenue</div>
+                            <div class="flow-stat-value" id="saleTotalRevenueAmount" style="color: #10b981;">₹0.00</div>
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Net Gross Profit</div>
+                            <div class="flow-stat-value" id="saleTotalProfitAmount" style="color: #fbbf24;">₹0.00</div>
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Total Crates / Boxes Sold</div>
+                            <div class="flow-stat-value" id="saleTotalBoxesSold" style="color: #c084fc;">0 Crates</div>
+                        </div>
+                    </div>
+
+                    <div class="filter-bar" style="flex-wrap: wrap; gap: 12px; justify-content: space-between;">
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <div class="search-input-wrap" style="min-width: 240px;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21L16.65 16.65"/></svg>
+                                <input type="text" id="saleSearch" placeholder="Search by store, product, or driver..." oninput="app.renderSales()">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.25); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                                <label style="margin: 0; font-size: 0.8rem; color: #38bdf8; font-weight: 700; white-space: nowrap;">📅 Month:</label>
+                                <select id="saleMonthFilter" style="width: auto; padding: 4px 8px; font-size: 0.84rem; font-weight: 600; border-radius: 6px;" onchange="app.onSaleMonthFilterChange()">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            <div style="display: flex; gap: 6px; align-items: center;">
+                                <label style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Day:</label>
+                                <input type="date" id="saleDateFilter" style="width: auto; padding: 4px 8px; font-size: 0.82rem;" onchange="app.renderSales()">
+                                <button class="btn btn-secondary btn-sm" onclick="app.resetSalesFilters()">Reset</button>
+                            </div>
                         </div>
                     </div>
 
@@ -660,6 +693,108 @@
                 </div>
             </section>
 
+            <!-- SECTION: TRUCKS & FLEET LOGISTICS -->
+            <section class="app-section" id="section-trucks">
+                <div class="card">
+                    <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
+                        <div class="card-title">
+                            <span>🚛</span>
+                            <span>Trucks Fleet — Business, Fuel & Maintenance Logistics</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn btn-primary" onclick="app.openTruckLogModal()">+ Add Truck Trip / Delivery</button>
+                            <button class="btn btn-purple" onclick="app.openTruckRefuelMaintenanceModal()">⛽ + Refuel / Maintenance</button>
+                            <button class="btn btn-secondary" onclick="app.openVehicleManagerModal()" style="border-color: #38bdf8; color: #38bdf8;">🚛 + Add / Manage Vehicles</button>
+                        </div>
+                    </div>
+
+                    <!-- 2 Main Dropdowns & Filter Controls -->
+                    <div class="filter-bar" style="flex-wrap: wrap; gap: 14px; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.6); padding: 14px 18px; border-radius: 12px; margin-bottom: 20px;">
+                        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                            <!-- Dropdown 1: Month Selector -->
+                            <div style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 10px; border: 1px solid var(--border-color);">
+                                <label style="margin: 0; font-size: 0.84rem; color: #38bdf8; font-weight: 700; white-space: nowrap;">📅 Month:</label>
+                                <select id="truckMonthFilter" style="width: auto; padding: 5px 10px; font-size: 0.88rem; font-weight: 600; border-radius: 6px; min-width: 170px;" onchange="app.onTruckFilterChange()">
+                                    <!-- Dynamic Month list -->
+                                </select>
+                            </div>
+
+                            <!-- Dropdown 2: Truck Selector -->
+                            <div style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 10px; border: 1px solid var(--border-color);">
+                                <label style="margin: 0; font-size: 0.84rem; color: #fbbf24; font-weight: 700; white-space: nowrap;">🚛 Select Truck:</label>
+                                <select id="truckSelectFilter" style="width: auto; padding: 5px 10px; font-size: 0.88rem; font-weight: 700; border-radius: 6px; min-width: 160px;" onchange="app.onTruckFilterChange()">
+                                    <option value="all">🌟 All Trucks (Fleet Overview)</option>
+                                    <option value="SUPRO" selected>🚚 SUPRO (Mahindra)</option>
+                                    <option value="BOLERO">🚚 BOLERO (Maxi Truck)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <div class="search-input-wrap" style="min-width: 220px;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21L16.65 16.65"/></svg>
+                                <input type="text" id="truckSearch" placeholder="Search driver, location, product..." oninput="app.renderTrucks()">
+                            </div>
+                            <button class="btn btn-secondary btn-sm" onclick="app.resetTruckFilters()" title="Reset Filters">Reset View</button>
+                        </div>
+                    </div>
+
+                    <!-- Truck Business & Financial KPI Cards -->
+                    <div class="drum-summary-cards" style="margin-bottom: 22px;">
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Total Trips / Orders</div>
+                            <div class="flow-stat-value" id="truckKpiTotalTrips" style="color: #38bdf8;">0 Trips</div>
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Total Distance (KM)</div>
+                            <div class="flow-stat-value" id="truckKpiTotalKM" style="color: #c084fc;">0 KM</div>
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Total Delivery Revenue</div>
+                            <div class="flow-stat-value" id="truckKpiTotalRevenue" style="color: #10b981;">₹0.00</div>
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Refueling / Diesel Cost</div>
+                            <div class="flow-stat-value" id="truckKpiFuelCost" style="color: #f59e0b;">₹0.00</div>
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Maintenance & Repairs</div>
+                            <div class="flow-stat-value" id="truckKpiMaintenanceCost" style="color: #ef4444;">₹0.00</div>
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Net Truck Profit</div>
+                            <div class="flow-stat-value" id="truckKpiNetProfit" style="color: #34d399;">+₹0.00</div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Truck Trips, Fuel & Maintenance Log Table -->
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Truck</th>
+                                    <th>Driver</th>
+                                    <th>Product / Goods Carried</th>
+                                    <th>Location (From &rarr; To)</th>
+                                    <th>KM Run</th>
+                                    <th>Trip Amount (₹)</th>
+                                    <th>Payment</th>
+                                    <th>Diesel Refueling</th>
+                                    <th>KM Run After Last Refuel</th>
+                                    <th>Maintenance / Repairs</th>
+                                    <th>Net Profit</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="truckLogsTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
             <!-- SECTION 9: PRODUCT ANALYTICS & DEMAND INTELLIGENCE -->
             <section class="app-section" id="section-analytics">
                 
@@ -836,42 +971,42 @@
                     </div>
                 </div>
 
-                <!-- 4 KPI Tiles -->
-                <div class="kpi-grid">
-                    <div class="kpi-card">
-                        <div class="kpi-header">
-                            <span class="kpi-title">Total Approved Users</span>
-                            <span class="kpi-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">👥</span>
+                <!-- 4 Redesigned KPI Tiles -->
+                <div class="admin-kpi-grid">
+                    <div class="admin-kpi-card">
+                        <div class="admin-kpi-icon blue">👥</div>
+                        <div class="admin-kpi-info">
+                            <span class="admin-kpi-title">TOTAL APPROVED USERS</span>
+                            <div class="admin-kpi-value" id="adminKpiTotalUsers">1</div>
+                            <div class="admin-kpi-subtext">Active authorized accounts</div>
                         </div>
-                        <div class="kpi-value" id="adminKpiTotalUsers">1</div>
-                        <div class="kpi-subtext">Active authorized accounts</div>
                     </div>
 
-                    <div class="kpi-card">
-                        <div class="kpi-header">
-                            <span class="kpi-title">Active Administrators</span>
-                            <span class="kpi-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">🛡️</span>
+                    <div class="admin-kpi-card">
+                        <div class="admin-kpi-icon amber">🛡️</div>
+                        <div class="admin-kpi-info">
+                            <span class="admin-kpi-title">ACTIVE ADMINISTRATORS</span>
+                            <div class="admin-kpi-value" id="adminKpiTotalAdmins" style="color: #f59e0b;">1</div>
+                            <div class="admin-kpi-subtext">Full system control privileges</div>
                         </div>
-                        <div class="kpi-value" id="adminKpiTotalAdmins" style="color: #f59e0b;">1</div>
-                        <div class="kpi-subtext">Full system control privileges</div>
                     </div>
 
-                    <div class="kpi-card">
-                        <div class="kpi-header">
-                            <span class="kpi-title">Pending Access Approvals</span>
-                            <span class="kpi-icon" style="background: rgba(168, 85, 247, 0.15); color: #a855f7;">⏳</span>
+                    <div class="admin-kpi-card">
+                        <div class="admin-kpi-icon purple">⏳</div>
+                        <div class="admin-kpi-info">
+                            <span class="admin-kpi-title">PENDING APPROVALS</span>
+                            <div class="admin-kpi-value" id="adminKpiPendingRequests" style="color: #c084fc;">0</div>
+                            <div class="admin-kpi-subtext">Waiting for your authorization</div>
                         </div>
-                        <div class="kpi-value" id="adminKpiPendingRequests" style="color: #a855f7;">0</div>
-                        <div class="kpi-subtext">Waiting for your approval</div>
                     </div>
 
-                    <div class="kpi-card">
-                        <div class="kpi-header">
-                            <span class="kpi-title">Owner Account Protection</span>
-                            <span class="kpi-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">🔒</span>
+                    <div class="admin-kpi-card">
+                        <div class="admin-kpi-icon green">🔒</div>
+                        <div class="admin-kpi-info">
+                            <span class="admin-kpi-title">OWNER PROTECTION</span>
+                            <div class="admin-kpi-value" style="color: #10b981; font-size: 1.15rem; font-weight: 800;">PERMANENT</div>
+                            <div class="admin-kpi-subtext" style="color: #86efac; font-weight: 600;">Account cannot be removed</div>
                         </div>
-                        <div class="kpi-value" style="color: #10b981; font-size: 1.25rem;">PERMANENT</div>
-                        <div class="kpi-subtext">Cannot be deleted or removed</div>
                     </div>
                 </div>
 
@@ -1928,10 +2063,6 @@
                     📩 Request Admin Approval
                 </button>
             </div>
-
-            <div style="margin-top: 14px; background: rgba(56, 189, 248, 0.06); border: 1px dashed rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 8px 12px; font-size: 0.76rem; color: var(--text-secondary); text-align: center;">
-                🔑 <strong>Super Admin (Owner):</strong> <code style="color:#38bdf8;">admin@aquatrack.com</code> &bull; Pass: <code style="color:#38bdf8;">admin123</code>
-            </div>
         </div>
     </div>
 
@@ -2244,10 +2375,29 @@
                         </label>
 
                         <label class="op-checkbox-card">
+                            <input type="checkbox" id="perm_canEditTrucks">
+                            <div class="op-info">
+                                <span class="op-name">🚛 Trucks & Fleet Logistics</span>
+                                <span class="op-desc">Log delivery trips, third-party delivery cargo, diesel refueling & maintenance</span>
+                            </div>
+                        </label>
+
+                        <label class="op-checkbox-card">
                             <input type="checkbox" id="perm_canResetDatabase">
                             <div class="op-info">
                                 <span class="op-name">🔄 Reset to 0 Database</span>
                                 <span class="op-desc">Authorize data cleanups, stock resets to 0 & fresh starts</span>
+                            </div>
+                        </label>
+
+                        <label class="op-checkbox-card" id="perm_card_canEditAdmin" style="border: 1px solid rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.06);">
+                            <input type="checkbox" id="perm_canEditAdmin">
+                            <div class="op-info">
+                                <span class="op-name" style="color: #fbbf24; display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                                    <span>🔐 Admin Console & Security Controls</span>
+                                    <span class="badge badge-warning" id="perm_admin_lock_tag" style="font-size: 0.65rem; padding: 2px 6px;">👑 Super Admin Exclusive</span>
+                                </span>
+                                <span class="op-desc">Authorize user approvals, password changes, operations access & master security settings (Only Super Admin can grant this privilege)</span>
                             </div>
                         </label>
                     </div>
@@ -2262,10 +2412,196 @@
         </div>
     </div>
 
+    <!-- MODAL: ADD / EDIT TRUCK TRIP & LOG ENTRY -->
+    <div class="modal-overlay" id="truckLogModal">
+        <div class="modal-box" style="max-width: 620px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="truckLogModalTitle">🚛 Record Truck Trip & Delivery</h3>
+                <button class="close-btn" onclick="app.closeModal('truckLogModal')">&times;</button>
+            </div>
+            <form id="truckLogForm" onsubmit="app.handleTruckLogSubmit(event)">
+                <input type="hidden" id="truckLogId">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Trip Date *</label>
+                            <input type="date" id="tlogDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Select Truck *</label>
+                            <select id="tlogTruck" required>
+                                <option value="SUPRO">🚚 SUPRO (Mahindra)</option>
+                                <option value="BOLERO">🚚 BOLERO (Maxi Truck)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Assigned Driver</label>
+                            <select id="tlogDriver">
+                                <!-- Populated dynamically from Staff list -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Product / Goods Carried *</label>
+                            <input type="text" id="tlogProduct" placeholder="e.g. 150 Boxes Water Bottles / Third-Party Goods" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Location From (Source) *</label>
+                            <input type="text" id="tlogFrom" placeholder="e.g. Main Plant Warehouse" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Location To (Destination) *</label>
+                            <input type="text" id="tlogTo" placeholder="e.g. City Market Retailers / Private Depot" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Trip Distance (KM Run) *</label>
+                            <input type="number" id="tlogKm" step="0.1" min="0" placeholder="e.g. 45" required oninput="app.calcTruckModalPreview()">
+                        </div>
+                        <div class="form-group">
+                            <label>Trip Amount / Freight Charge (₹) *</label>
+                            <input type="number" id="tlogAmount" step="0.01" min="0" placeholder="e.g. 1800" required oninput="app.calcTruckModalPreview()">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Payment Status</label>
+                            <select id="tlogPaymentStatus">
+                                <option value="Paid">✓ Paid / Received</option>
+                                <option value="Due">Due / Credit Pending</option>
+                                <option value="Partial">Partial Payment</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Client / Store Name (Optional)</label>
+                            <input type="text" id="tlogCustomer" placeholder="e.g. Direct / Sharma Traders / Third-party">
+                        </div>
+                    </div>
+
+                    <!-- Diesel Refueling & Maintenance Section -->
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; margin-top: 10px;">
+                        <div style="font-weight: 700; color: #38bdf8; font-size: 0.88rem; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                            <span>⛽</span> Diesel Refueling & Maintenance on this Trip (Optional)
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Diesel Refueling Cost (₹)</label>
+                                <input type="number" id="tlogFuelCost" step="0.01" min="0" placeholder="0.00" oninput="app.calcTruckModalPreview()">
+                            </div>
+                            <div class="form-group">
+                                <label>Fuel Litres (Optional)</label>
+                                <input type="number" id="tlogFuelLitres" step="0.1" min="0" placeholder="e.g. 15.0">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Maintenance / Repair Cost (₹)</label>
+                                <input type="number" id="tlogMaintenanceCost" step="0.01" min="0" placeholder="0.00" oninput="app.calcTruckModalPreview()">
+                            </div>
+                            <div class="form-group">
+                                <label>Maintenance Notes / Servicing</label>
+                                <input type="text" id="tlogMaintenanceNotes" placeholder="e.g. Engine Oil top-up, Air check, Tyre puncture">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 14px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.85rem; color: var(--text-secondary);">Estimated Net Trip Profit:</span>
+                        <strong style="color: #10b981; font-size: 1.15rem;" id="truckModalNetProfitPreview">₹0.00</strong>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('truckLogModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Truck Trip Log ✓</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD & MANAGE FLEET / TRUCKS -->
+    <div class="modal-overlay" id="truckVehicleModal">
+        <div class="modal-box" style="max-width: 680px;">
+            <div class="modal-header">
+                <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+                    <span>🚛</span> Manage Fleet & Add New Vehicles
+                </h3>
+                <button class="close-btn" onclick="app.closeModal('truckVehicleModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Add New Vehicle Form Card -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 12px 0; font-size: 0.95rem; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                        <span>➕</span> Register New Truck / Transport Vehicle
+                    </h4>
+                    <form id="newTruckForm" onsubmit="app.handleAddTruckSubmit(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Truck / Vehicle Name *</label>
+                                <input type="text" id="newTruckName" placeholder="e.g. TATA ACE / EICHER / PICKUP" required style="text-transform: uppercase;">
+                            </div>
+                            <div class="form-group">
+                                <label>Registration / Plate Number</label>
+                                <input type="text" id="newTruckNumber" placeholder="e.g. OD-02-CD-5678" style="text-transform: uppercase;">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Default Assigned Driver</label>
+                                <select id="newTruckDefaultDriver" class="form-control">
+                                    <!-- Populated dynamically from Drivers / Staff -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Vehicle Model / Capacity Note</label>
+                                <input type="text" id="newTruckModel" placeholder="e.g. 1.5 Ton / 20L Drum Carrier">
+                            </div>
+                        </div>
+                        <div style="text-align: right; margin-top: 8px;">
+                            <button type="submit" class="btn btn-primary btn-sm">+ Add Truck to Fleet ✓</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Existing Fleet Table -->
+                <h4 style="margin: 0 0 10px 0; font-size: 0.95rem; color: #fbbf24; display: flex; align-items: center; gap: 6px;">
+                    <span>📋</span> Currently Registered Vehicles & Fleet Roster
+                </h4>
+                <div class="table-responsive" style="max-height: 240px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Vehicle</th>
+                                <th>Plate Number</th>
+                                <th>Default Driver</th>
+                                <th>Trips Done</th>
+                                <th>Total Distance</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fleetVehiclesTableBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="app.closeModal('truckVehicleModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="app.js?v=20260927_17"></script>
+    <script src="app.js?v=20260927_23"></script>
     <script>
         // Universal modal closer & safety bridge
         document.addEventListener('click', function(e) {

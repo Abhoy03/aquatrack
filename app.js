@@ -18,6 +18,8 @@ class DataStore {
             staff: [],
             staffDeliveries: [],
             staffMonthlySalaries: [],
+            trucks: [],
+            truckLogs: [],
             users: [],
             accessRequests: []
         };
@@ -46,6 +48,13 @@ class DataStore {
         if (!this.data.payments) this.data.payments = [];
         if (!this.data.staffDeliveries) this.data.staffDeliveries = [];
         if (!this.data.staffMonthlySalaries) this.data.staffMonthlySalaries = [];
+        if (!this.data.trucks || this.data.trucks.length === 0) {
+            this.data.trucks = [
+                { id: 'truck_supro', name: 'SUPRO', number: 'OD-02-AB-1234', defaultDriver: 'MANTU' },
+                { id: 'truck_bolero', name: 'BOLERO', number: 'OD-02-XY-5678', defaultDriver: 'CHANDAN' }
+            ];
+        }
+        if (!this.data.truckLogs) this.data.truckLogs = [];
         if (!this.data.users) this.data.users = [];
         if (!this.data.accessRequests) this.data.accessRequests = [];
 
@@ -202,6 +211,107 @@ class DataStore {
         this.data.staffMonthlySalaries = [
             { id: 'sms_mantu_' + currentMonth, staffId: 'st_mantu', month: currentMonth, fixedSalary: 12000, extraIncome: 500, advanceSalary: 1000, paidAmount: 0, paidDate: '', paymentMode: 'Cash', notes: 'Advance for festivals', status: 'Pending' },
             { id: 'sms_chandan_' + currentMonth, staffId: 'st_chandan', month: currentMonth, fixedSalary: 9000, extraIncome: 200, advanceSalary: 500, paidAmount: 0, paidDate: '', paymentMode: 'Cash', notes: '', status: 'Pending' }
+        ];
+
+        this.data.trucks = [
+            { id: 'truck_supro', name: 'SUPRO', number: 'OD-02-AB-1234', defaultDriver: 'MANTU' },
+            { id: 'truck_bolero', name: 'BOLERO', number: 'OD-02-XY-5678', defaultDriver: 'CHANDAN' }
+        ];
+
+        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+        const twoDaysAgo = new Date(Date.now() - 172800000).toISOString().split('T')[0];
+
+        this.data.truckLogs = [
+            {
+                id: 'tl_1',
+                date: twoDaysAgo,
+                month: twoDaysAgo.substring(0, 7),
+                truckName: 'SUPRO',
+                driverName: 'MANTU',
+                product: 'AquaPure Mineral Water (120 Boxes)',
+                fromLocation: 'Factory Plant #2',
+                toLocation: 'Krishna Supermarket',
+                kmRun: 45,
+                tripAmount: 1800,
+                paymentStatus: 'Paid',
+                fuelCost: 2000,
+                fuelLitres: 22,
+                maintenanceCost: 0,
+                maintenanceNotes: '',
+                tripType: 'Own Business Delivery'
+            },
+            {
+                id: 'tl_2',
+                date: yesterday,
+                month: yesterday.substring(0, 7),
+                truckName: 'SUPRO',
+                driverName: 'MANTU',
+                product: 'Hardware & Construction Goods (3rd Party)',
+                fromLocation: 'Industrial Estate',
+                toLocation: 'Sector 14 Market',
+                kmRun: 60,
+                tripAmount: 2400,
+                paymentStatus: 'Paid',
+                fuelCost: 0,
+                fuelLitres: 0,
+                maintenanceCost: 350,
+                maintenanceNotes: 'Tyre puncture & air pressure',
+                tripType: 'Third-Party Delivery'
+            },
+            {
+                id: 'tl_3',
+                date: today,
+                month: today.substring(0, 7),
+                truckName: 'SUPRO',
+                driverName: 'MANTU',
+                product: '20L Water Drums (60 Units)',
+                fromLocation: 'Main Depot',
+                toLocation: 'City Express Mart & Stores',
+                kmRun: 35,
+                tripAmount: 1400,
+                paymentStatus: 'Due',
+                fuelCost: 1500,
+                fuelLitres: 16.5,
+                maintenanceCost: 0,
+                maintenanceNotes: '',
+                tripType: 'Own Business Delivery'
+            },
+            {
+                id: 'tl_4',
+                date: twoDaysAgo,
+                month: twoDaysAgo.substring(0, 7),
+                truckName: 'BOLERO',
+                driverName: 'CHANDAN',
+                product: 'Cold Drink Crates (80 Crates)',
+                fromLocation: 'Bottling Plant #1',
+                toLocation: 'Highway Dhaba & Rest Stops',
+                kmRun: 80,
+                tripAmount: 3000,
+                paymentStatus: 'Paid',
+                fuelCost: 2500,
+                fuelLitres: 27,
+                maintenanceCost: 0,
+                maintenanceNotes: '',
+                tripType: 'Own Business Delivery'
+            },
+            {
+                id: 'tl_5',
+                date: today,
+                month: today.substring(0, 7),
+                truckName: 'BOLERO',
+                driverName: 'CHANDAN',
+                product: 'Catering & Event Packages (3rd Party)',
+                fromLocation: 'Grand Palace Banquet',
+                toLocation: 'Bypass Resort Hub',
+                kmRun: 55,
+                tripAmount: 2200,
+                paymentStatus: 'Paid',
+                fuelCost: 0,
+                fuelLitres: 0,
+                maintenanceCost: 800,
+                maintenanceNotes: 'Engine oil top-up & wiper service',
+                tripType: 'Third-Party Delivery'
+            }
         ];
 
         this.save();
@@ -472,6 +582,88 @@ class DataStore {
     }
 
     // ==========================================
+    // TRUCKS & FLEET LOGISTICS
+    // ==========================================
+    getTrucks() {
+        if (!this.data.trucks || this.data.trucks.length === 0) {
+            this.data.trucks = [
+                { id: 'truck_supro', name: 'SUPRO', number: 'OD-02-AB-1234', defaultDriver: 'MANTU' },
+                { id: 'truck_bolero', name: 'BOLERO', number: 'OD-02-XY-5678', defaultDriver: 'CHANDAN' }
+            ];
+            this.save();
+        }
+        return this.data.trucks;
+    }
+
+    addTruck(truck) {
+        if (!this.data.trucks) this.data.trucks = [];
+        truck.id = 'truck_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+        truck.name = (truck.name || 'TRUCK').trim().toUpperCase();
+        this.data.trucks.push(truck);
+        this.save();
+        return truck;
+    }
+
+    deleteTruck(truckId) {
+        if (!this.data.trucks) return false;
+        this.data.trucks = this.data.trucks.filter(t => t.id !== truckId && t.name !== truckId);
+        this.save();
+        return true;
+    }
+
+    getTruck(idOrName) {
+        if (!idOrName) return null;
+        const term = idOrName.trim().toUpperCase();
+        return (this.getTrucks() || []).find(t => t.id === idOrName || t.name.toUpperCase() === term);
+    }
+
+    getTruckLogs(truckName = null, month = null) {
+        let list = this.data.truckLogs || [];
+        if (truckName && truckName !== 'all') {
+            const target = truckName.trim().toUpperCase();
+            list = list.filter(l => (l.truckName || '').toUpperCase() === target);
+        }
+        if (month && month !== 'all') {
+            list = list.filter(l => (l.month === month) || (l.date && l.date.startsWith(month)));
+        }
+        return list;
+    }
+
+    getTruckLog(id) {
+        return (this.data.truckLogs || []).find(l => l.id === id);
+    }
+
+    addTruckLog(log) {
+        log.id = 'tl_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+        if (!log.month && log.date) {
+            log.month = log.date.substring(0, 7);
+        }
+        if (!this.data.truckLogs) this.data.truckLogs = [];
+        this.data.truckLogs.unshift(log);
+        this.save();
+        return log;
+    }
+
+    updateTruckLog(id, updated) {
+        if (!this.data.truckLogs) this.data.truckLogs = [];
+        const idx = this.data.truckLogs.findIndex(l => l.id === id);
+        if (idx !== -1) {
+            if (updated.date && !updated.month) {
+                updated.month = updated.date.substring(0, 7);
+            }
+            this.data.truckLogs[idx] = { ...this.data.truckLogs[idx], ...updated };
+            this.save();
+            return this.data.truckLogs[idx];
+        }
+        return null;
+    }
+
+    deleteTruckLog(id) {
+        this.data.truckLogs = (this.data.truckLogs || []).filter(l => l.id !== id);
+        this.save();
+    }
+
+    // ==========================================
     // USER AUTHENTICATION & ACCESS CONTROL
     // ==========================================
     getUsers() { return this.data.users || []; }
@@ -481,7 +673,7 @@ class DataStore {
         return (this.data.users || []).find(u => u.email.trim().toLowerCase() === email.trim().toLowerCase());
     }
     getDefaultPermissions(role) {
-        if (role === 'Super Admin' || role === 'Co-Administrator' || role === 'Admin') {
+        if (role === 'Super Admin') {
             return {
                 canEditProducts: true,
                 canEditPurchases: true,
@@ -490,7 +682,22 @@ class DataStore {
                 canEditStores: true,
                 canEditDaily: true,
                 canEditStaff: true,
-                canResetDatabase: true
+                canEditTrucks: true,
+                canResetDatabase: true,
+                canEditAdmin: true
+            };
+        } else if (role === 'Co-Administrator' || role === 'Admin') {
+            return {
+                canEditProducts: true,
+                canEditPurchases: true,
+                canEditSales: true,
+                canEditDrums: true,
+                canEditStores: true,
+                canEditDaily: true,
+                canEditStaff: true,
+                canEditTrucks: true,
+                canResetDatabase: true,
+                canEditAdmin: false // Exclusive: Only Super Admin can grant this privilege!
             };
         } else if (role === 'Driver') {
             return {
@@ -501,7 +708,9 @@ class DataStore {
                 canEditStores: false,
                 canEditDaily: false,
                 canEditStaff: true,
-                canResetDatabase: false
+                canEditTrucks: true,
+                canResetDatabase: false,
+                canEditAdmin: false
             };
         } else if (role === 'Helper') {
             return {
@@ -512,7 +721,9 @@ class DataStore {
                 canEditStores: false,
                 canEditDaily: false,
                 canEditStaff: true,
-                canResetDatabase: false
+                canEditTrucks: false,
+                canResetDatabase: false,
+                canEditAdmin: false
             };
         } else { // Staff / Viewer
             return {
@@ -523,7 +734,9 @@ class DataStore {
                 canEditStores: false,
                 canEditDaily: false,
                 canEditStaff: false,
-                canResetDatabase: false
+                canEditTrucks: false,
+                canResetDatabase: false,
+                canEditAdmin: false
             };
         }
     }
@@ -685,6 +898,9 @@ class AquaTrackApp {
         const now = new Date();
         this.selectedStaffMonth = now.toISOString().substring(0, 7); // YYYY-MM
         this.selectedLedgerMonth = this.selectedStaffMonth;
+        this.selectedSalesMonth = this.selectedStaffMonth;
+        this.selectedTruckMonth = this.selectedStaffMonth;
+        this.selectedTruckName = 'all';
         this.selectedLedgerStaffId = null;
 
         this.init();
@@ -989,6 +1205,7 @@ class AquaTrackApp {
             'stores': { title: 'Store Accounts & Ledger (Khata)', sub: 'Track retailer billings, payments, and outstanding balance' },
             'daily': { title: 'Daily Business Summary & P&L', sub: 'Daily Inflow (Come-In) vs Outflow (Goes-Out) audit and net profits' },
             'staff': { title: 'Drivers & Staff Management', sub: 'Manage delivery drivers, helpers, monthly salaries, advances & box commissions' },
+            'trucks': { title: 'Trucks & Fleet Logistics', sub: 'Monitor SUPRO & BOLERO monthly earnings, trips, diesel refills, mileage & repairs' },
             'analytics': { title: 'Product Demand & Sales Intelligence', sub: 'Velocity, Long-Run Performers, Store Penetration & Product Deep-Dive Analytics' },
             'admin': { title: 'Admin & Security Command Center', sub: 'Authorized Users, Access Requests, Security Policies & Master Passwords' }
         };
@@ -1036,6 +1253,11 @@ class AquaTrackApp {
         document.getElementById('storeForm')?.addEventListener('submit', (e) => this.handleStoreSubmit(e));
         document.getElementById('paymentForm')?.addEventListener('submit', (e) => this.handlePaymentSubmit(e));
         document.getElementById('staffForm')?.addEventListener('submit', (e) => this.handleStaffSubmit(e));
+        document.getElementById('truckLogForm')?.addEventListener('submit', (e) => this.handleTruckLogSubmit(e));
+
+        document.getElementById('truckFilterMonth')?.addEventListener('change', () => this.onTruckFilterChange());
+        document.getElementById('truckFilterName')?.addEventListener('change', () => this.onTruckFilterChange());
+        document.getElementById('truckSearchInput')?.addEventListener('input', () => this.renderTrucks());
     }
 
     setupModalEscape() {
@@ -1063,6 +1285,7 @@ class AquaTrackApp {
         this.renderStores();
         this.renderDailyReport();
         this.renderStaff();
+        this.renderTrucks();
         this.renderAnalytics();
         this.renderAdminSection();
     }
@@ -1076,6 +1299,7 @@ class AquaTrackApp {
         else if (this.currentSection === 'stores') this.renderStores();
         else if (this.currentSection === 'daily') this.renderDailyReport();
         else if (this.currentSection === 'staff') this.renderStaff();
+        else if (this.currentSection === 'trucks') this.renderTrucks();
         else if (this.currentSection === 'analytics') this.renderAnalytics();
         else if (this.currentSection === 'admin') this.renderAdminSection();
     }
@@ -1300,52 +1524,158 @@ class AquaTrackApp {
     }
 
     // ==========================================
-    // RENDER: SALES
+    // RENDER: SALES & MONTHLY PROFIT AUDIT
     // ==========================================
+    populateSalesMonthDropdown() {
+        const select = document.getElementById('saleMonthFilter');
+        if (!select) return;
+
+        const currentVal = this.selectedSalesMonth;
+        const sales = this.store.getSales();
+        const monthSet = new Set();
+        
+        // Always include current month
+        const now = new Date();
+        const currentMonth = now.toISOString().substring(0, 7);
+        monthSet.add(currentMonth);
+
+        sales.forEach(s => {
+            if (s.date && s.date.length >= 7) {
+                monthSet.add(s.date.substring(0, 7));
+            }
+        });
+
+        const sortedMonths = Array.from(monthSet).sort().reverse();
+        
+        select.innerHTML = '';
+        
+        // Option 1: All Months
+        const allOpt = document.createElement('option');
+        allOpt.value = 'all';
+        allOpt.textContent = '🌟 All Months / All Time';
+        select.appendChild(allOpt);
+
+        sortedMonths.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m;
+            const [y, mm] = m.split('-');
+            const d = new Date(parseInt(y), parseInt(mm) - 1, 1);
+            const monthName = d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+            opt.textContent = `📅 ${monthName}${m === currentMonth ? ' (Current)' : ''}`;
+            select.appendChild(opt);
+        });
+
+        if (currentVal && (sortedMonths.includes(currentVal) || currentVal === 'all')) {
+            select.value = currentVal;
+        } else {
+            select.value = currentMonth;
+            this.selectedSalesMonth = currentMonth;
+        }
+    }
+
+    onSaleMonthFilterChange() {
+        const select = document.getElementById('saleMonthFilter');
+        if (select) {
+            this.selectedSalesMonth = select.value;
+        }
+        this.renderSales();
+    }
+
+    resetSalesFilters() {
+        const search = document.getElementById('saleSearch');
+        if (search) search.value = '';
+        const dateInput = document.getElementById('saleDateFilter');
+        if (dateInput) dateInput.value = '';
+        const now = new Date();
+        this.selectedSalesMonth = now.toISOString().substring(0, 7);
+        const select = document.getElementById('saleMonthFilter');
+        if (select) select.value = this.selectedSalesMonth;
+        this.renderSales();
+    }
+
     renderSales() {
+        this.populateSalesMonthDropdown();
+
         const tbody = document.getElementById('salesTableBody');
         if (!tbody) return;
         tbody.innerHTML = '';
 
         const search = (document.getElementById('saleSearch')?.value || '').toLowerCase();
         const dateFilter = document.getElementById('saleDateFilter')?.value;
+        const monthFilter = this.selectedSalesMonth || document.getElementById('saleMonthFilter')?.value || 'all';
 
-        let sales = this.store.getSales();
-        if (dateFilter) {
-            sales = sales.filter(s => s.date === dateFilter);
+        let allSales = this.store.getSales();
+        let filtered = allSales;
+
+        // 1. Month Filter
+        if (monthFilter && monthFilter !== 'all') {
+            filtered = filtered.filter(s => s.date && s.date.startsWith(monthFilter));
         }
+
+        // 2. Exact Day Filter
+        if (dateFilter) {
+            filtered = filtered.filter(s => s.date === dateFilter);
+        }
+
+        // 3. Search Filter
         if (search) {
-            sales = sales.filter(s => 
+            filtered = filtered.filter(s => 
                 (s.storeName && s.storeName.toLowerCase().includes(search)) ||
-                (s.productName && s.productName.toLowerCase().includes(search))
+                (s.productName && s.productName.toLowerCase().includes(search)) ||
+                (s.driverName && s.driverName.toLowerCase().includes(search))
             );
         }
 
-        if (sales.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 24px; color: var(--text-muted);">No store sales recorded yet. Click "+ Record New Sale" to log a store delivery!</td></tr>';
+        // Calculate KPI summaries for filtered period
+        const totalOrders = filtered.length;
+        const totalRevenue = filtered.reduce((sum, s) => sum + (s.total || 0), 0);
+        const totalProfit = filtered.reduce((sum, s) => sum + (s.profit || 0), 0);
+        const totalBoxes = filtered.reduce((sum, s) => {
+            const boxes = s.boxes || (s.qty / (s.unitsPerBox || 24));
+            return sum + (boxes || 0);
+        }, 0);
+
+        const setSafe = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = val;
+        };
+
+        setSafe('saleTotalOrdersCount', `${totalOrders} Orders`);
+        setSafe('saleTotalRevenueAmount', '₹' + totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        setSafe('saleTotalProfitAmount', '+₹' + totalProfit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        setSafe('saleTotalBoxesSold', `${totalBoxes.toFixed(1)} Crates`);
+
+        if (filtered.length === 0) {
+            const label = monthFilter === 'all' ? 'all recorded time' : monthFilter;
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 28px; color: var(--text-muted); font-size: 0.9rem;">
+                No store sales recorded for ${label}. Click "+ Record New Sale" to add transactions!
+            </td></tr>`;
             return;
         }
 
-        sales.forEach(s => {
+        filtered.forEach(s => {
             const statusBadge = s.status === 'Paid' 
                 ? '<span class="badge badge-success">✓ Paid</span>' 
                 : (s.status === 'Partial' ? '<span class="badge badge-warning">Partial</span>' : '<span class="badge badge-danger">Due / Credit</span>');
             
-            const driverInfo = s.driverName ? `<div>🚚 ${s.driverName}</div>` : '';
+            const driverInfo = s.driverName ? `<div style="font-size: 0.78rem; color: #38bdf8; margin-top: 2px;">🚚 ${s.driverName}</div>` : '';
+            const helperInfo = (s.helperNames && s.helperNames.length) ? `<div style="font-size: 0.74rem; color: var(--text-secondary);">🤝 ${s.helperNames.join(', ')}</div>` : '';
+
+            const boxesCount = (s.boxes || (s.qty / (s.unitsPerBox || 24))).toFixed(1);
 
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${s.date}</td>
-                <td><strong>${s.storeName}</strong>${driverInfo}</td>
+                <td><strong>${s.date}</strong></td>
+                <td><strong>${s.storeName}</strong></td>
                 <td>${s.productName}</td>
-                <td><span class="badge badge-info">${s.qty} units</span></td>
+                <td><span class="badge badge-info">${boxesCount} crt (${s.qty} units)</span></td>
                 <td>₹${(s.rate || 0).toFixed(2)}</td>
-                <td><strong>₹${(s.total || 0).toFixed(2)}</strong></td>
-                <td style="color: var(--text-muted);">₹${((s.buyPrice || 0) * s.qty).toFixed(2)}</td>
+                <td><strong style="color: #38bdf8;">₹${(s.total || 0).toFixed(2)}</strong></td>
                 <td style="color: #10b981; font-weight: 700;">+₹${(s.profit || 0).toFixed(2)}</td>
+                <td>${driverInfo}${helperInfo || '<span style="color: var(--text-muted); font-size:0.75rem;">Self / Direct</span>'}</td>
                 <td>${statusBadge}</td>
                 <td>
-                    <button class="btn btn-outline-danger btn-sm" onclick="app.deleteSale('${s.id}')">Delete</button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="app.deleteSale('${s.id}')" title="Delete Sale">🗑️</button>
                 </td>
             `;
             tbody.appendChild(row);
@@ -3381,10 +3711,10 @@ class AquaTrackApp {
                 else if (u.role === 'Helper') roleBadge = '<span class="badge badge-secondary">🤝 Helper</span>';
 
                 const perms = u.permissions || {};
-                const permKeys = ['canEditProducts', 'canEditPurchases', 'canEditSales', 'canEditDrums', 'canEditStores', 'canEditDaily', 'canEditStaff', 'canResetDatabase'];
-                const activePermsCount = isOwner ? 8 : permKeys.filter(k => perms[k] === true).length;
+                const permKeys = ['canEditProducts', 'canEditPurchases', 'canEditSales', 'canEditDrums', 'canEditStores', 'canEditDaily', 'canEditStaff', 'canEditTrucks', 'canResetDatabase'];
+                const activePermsCount = isOwner ? 9 : permKeys.filter(k => perms[k] === true).length;
 
-                let permsBadge = `<button class="btn btn-secondary btn-sm" onclick="app.openApprovedOperationsModal('${u.id}')" style="font-size: 0.74rem; padding: 3px 8px;">⚙️ ${activePermsCount}/8 Operations</button>`;
+                let permsBadge = `<button class="btn btn-secondary btn-sm" onclick="app.openApprovedOperationsModal('${u.id}')" style="font-size: 0.74rem; padding: 3px 8px;">⚙️ ${activePermsCount}/9 Operations</button>`;
                 if (isOwner) {
                     permsBadge = `<span class="badge badge-success" style="font-size: 0.72rem;">✓ Full Master Control</span>`;
                 }
@@ -3527,6 +3857,7 @@ class AquaTrackApp {
     }
 
     clearUserAttempts() {
+        if (!this.canPerform('canEditAdmin', 'Admin & Security Command Center', 'Clear Security Violation Logs')) return;
         if (!this.selectedAttemptUserId) return;
         this.store.clearUnauthorizedAttempts(this.selectedAttemptUserId);
         this.showToast('✅ Security violation logs cleared for user.', 'info');
@@ -3572,7 +3903,26 @@ class AquaTrackApp {
         setChecked('perm_canEditStores', perms.canEditStores);
         setChecked('perm_canEditDaily', perms.canEditDaily);
         setChecked('perm_canEditStaff', perms.canEditStaff);
+        setChecked('perm_canEditTrucks', perms.canEditTrucks);
         setChecked('perm_canResetDatabase', perms.canResetDatabase);
+        setChecked('perm_canEditAdmin', perms.canEditAdmin);
+
+        // Super Admin exclusivity: Only permanent owner/super admin can toggle Admin section tick box
+        const isCurrentSuperAdmin = !!(this.currentUser && (this.currentUser.isPermanentOwner || this.currentUser.role === 'Super Admin' || this.currentUser.email?.toLowerCase() === 'admin@aquatrack.com'));
+        const adminCb = document.getElementById('perm_canEditAdmin');
+        const adminLockTag = document.getElementById('perm_admin_lock_tag');
+        const adminCard = document.getElementById('perm_card_canEditAdmin');
+
+        if (adminCb) {
+            adminCb.disabled = !isCurrentSuperAdmin;
+        }
+        if (adminLockTag) {
+            adminLockTag.textContent = isCurrentSuperAdmin ? '👑 Super Admin Controlled' : '🔒 Super Admin Only';
+        }
+        if (adminCard) {
+            adminCard.style.opacity = isCurrentSuperAdmin ? '1.0' : '0.65';
+            adminCard.title = isCurrentSuperAdmin ? 'Only Super Admin can grant this privilege' : 'Locked: Only Super Admin (Owner) can toggle Admin section access';
+        }
 
         this.openModal('approvedOperationsModal');
     }
@@ -3580,6 +3930,7 @@ class AquaTrackApp {
     onRoleChangeInPermissionsModal() {
         const role = document.getElementById('opUserRole')?.value || 'Staff';
         const defaults = this.store.getDefaultPermissions(role);
+        const isCurrentSuperAdmin = !!(this.currentUser && (this.currentUser.isPermanentOwner || this.currentUser.role === 'Super Admin' || this.currentUser.email?.toLowerCase() === 'admin@aquatrack.com'));
         
         const setChecked = (id, val) => {
             const cb = document.getElementById(id);
@@ -3593,13 +3944,22 @@ class AquaTrackApp {
         setChecked('perm_canEditStores', defaults.canEditStores);
         setChecked('perm_canEditDaily', defaults.canEditDaily);
         setChecked('perm_canEditStaff', defaults.canEditStaff);
+        setChecked('perm_canEditTrucks', defaults.canEditTrucks);
         setChecked('perm_canResetDatabase', defaults.canResetDatabase);
+        if (isCurrentSuperAdmin) {
+            setChecked('perm_canEditAdmin', defaults.canEditAdmin);
+        }
     }
 
     setAllPermissions(enabled) {
-        ['perm_canEditProducts', 'perm_canEditPurchases', 'perm_canEditSales', 'perm_canEditDrums', 'perm_canEditStores', 'perm_canEditDaily', 'perm_canEditStaff', 'perm_canResetDatabase'].forEach(id => {
+        const isCurrentSuperAdmin = !!(this.currentUser && (this.currentUser.isPermanentOwner || this.currentUser.role === 'Super Admin' || this.currentUser.email?.toLowerCase() === 'admin@aquatrack.com'));
+        const permIds = ['perm_canEditProducts', 'perm_canEditPurchases', 'perm_canEditSales', 'perm_canEditDrums', 'perm_canEditStores', 'perm_canEditDaily', 'perm_canEditStaff', 'perm_canEditTrucks', 'perm_canResetDatabase'];
+        if (isCurrentSuperAdmin) {
+            permIds.push('perm_canEditAdmin');
+        }
+        permIds.forEach(id => {
             const cb = document.getElementById(id);
-            if (cb) cb.checked = enabled;
+            if (cb && !cb.disabled) cb.checked = enabled;
         });
     }
 
@@ -3608,6 +3968,13 @@ class AquaTrackApp {
         const userId = document.getElementById('opUserId')?.value;
         const user = this.store.getUser(userId);
         if (!user) return;
+
+        const isCurrentSuperAdmin = !!(this.currentUser && (this.currentUser.isPermanentOwner || this.currentUser.role === 'Super Admin' || this.currentUser.email?.toLowerCase() === 'admin@aquatrack.com'));
+
+        // If non-super admin tries to modify approved operations, verify if they have canEditAdmin
+        if (!this.canPerform('canEditAdmin', 'Admin & Security Command Center', 'Modify Approved Operations')) {
+            return;
+        }
 
         const newRole = document.getElementById('opUserRole')?.value || user.role;
         const newPerms = {
@@ -3618,7 +3985,10 @@ class AquaTrackApp {
             canEditStores: !!document.getElementById('perm_canEditStores')?.checked,
             canEditDaily: !!document.getElementById('perm_canEditDaily')?.checked,
             canEditStaff: !!document.getElementById('perm_canEditStaff')?.checked,
-            canResetDatabase: !!document.getElementById('perm_canResetDatabase')?.checked
+            canEditTrucks: !!document.getElementById('perm_canEditTrucks')?.checked,
+            canResetDatabase: !!document.getElementById('perm_canResetDatabase')?.checked,
+            // Super Admin exclusivity: Only Super Admin can change canEditAdmin
+            canEditAdmin: isCurrentSuperAdmin ? !!document.getElementById('perm_canEditAdmin')?.checked : (user.permissions?.canEditAdmin || false)
         };
 
         this.store.updateUser(userId, {
@@ -3642,6 +4012,8 @@ class AquaTrackApp {
     // Handlers for Master Passwords Configuration (Protected by Super Admin Password)
     handleUpdateResetPassword(e) {
         e.preventDefault();
+        if (!this.canPerform('canEditAdmin', 'Admin & Security Command Center', 'Update Reset to 0 Password')) return;
+
         const input = document.getElementById('newResetPasswordInput');
         const authInput = document.getElementById('authSuperAdminPassForReset');
         const newPass = input ? input.value.trim() : '';
@@ -3662,6 +4034,8 @@ class AquaTrackApp {
 
     handleUpdateAdminSectionPassword(e) {
         e.preventDefault();
+        if (!this.canPerform('canEditAdmin', 'Admin & Security Command Center', 'Update Admin Section Password')) return;
+
         const input = document.getElementById('newAdminSectionPasswordInput');
         const authInput = document.getElementById('authSuperAdminPassForAdminSection');
         const newPass = input ? input.value.trim() : '';
@@ -3682,6 +4056,8 @@ class AquaTrackApp {
 
     handleUpdateSuperAdminEmailPassword(e) {
         e.preventDefault();
+        if (!this.canPerform('canEditAdmin', 'Admin & Security Command Center', 'Update Owner Email Password')) return;
+
         const input = document.getElementById('newSuperAdminEmailPasswordInput');
         const authInput = document.getElementById('authSuperAdminPassForEmail');
         const newPass = input ? input.value.trim() : '';
@@ -3701,6 +4077,8 @@ class AquaTrackApp {
     }
 
     approveRequest(reqId, role = 'Staff') {
+        if (!this.canPerform('canEditAdmin', 'Admin & Security Command Center', 'Approve Access Request')) return;
+
         const req = (this.store.getAccessRequests() || []).find(r => r.id === reqId);
         if (!req) return;
 
@@ -3721,6 +4099,8 @@ class AquaTrackApp {
     }
 
     rejectRequest(reqId) {
+        if (!this.canPerform('canEditAdmin', 'Admin & Security Command Center', 'Reject Access Request')) return;
+
         if (!confirm('Reject and delete this access request?')) return;
         this.store.deleteAccessRequest(reqId);
         this.showToast('Access request rejected.', 'info');
@@ -3728,6 +4108,8 @@ class AquaTrackApp {
     }
 
     toggleUserAdminRole(userId) {
+        if (!this.canPerform('canEditAdmin', 'Admin & Security Command Center', 'Toggle User Role')) return;
+
         const user = this.store.getUser(userId);
         if (!user) return;
         if (user.isPermanentOwner) {
@@ -3743,6 +4125,8 @@ class AquaTrackApp {
     }
 
     deleteUserAccount(userId) {
+        if (!this.canPerform('canEditAdmin', 'Admin & Security Command Center', 'Delete User Account')) return;
+
         const user = this.store.getUser(userId);
         if (!user) return;
         if (user.isPermanentOwner) {
@@ -3757,12 +4141,15 @@ class AquaTrackApp {
     }
 
     openAddUserModal() {
+        if (!this.canPerform('canEditAdmin', 'Admin & Security Command Center', 'Add User')) return;
         document.getElementById('addUserForm')?.reset();
         this.openModal('addUserModal');
     }
 
     handleAddUserSubmit(e) {
         e.preventDefault();
+        if (!this.canPerform('canEditAdmin', 'Admin & Security Command Center', 'Create User Account')) return;
+
         const email = document.getElementById('newAccEmail')?.value.trim();
         const name = document.getElementById('newAccName')?.value.trim();
         const password = document.getElementById('newAccPassword')?.value.trim();
@@ -3796,6 +4183,7 @@ class AquaTrackApp {
     }
 
     openChangePasswordModal(userId) {
+        if (!this.canPerform('canEditAdmin', 'Admin & Security Command Center', 'Change User Password')) return;
         const user = this.store.getUser(userId);
         if (!user) return;
         document.getElementById('changePasswordForm')?.reset();
@@ -3806,6 +4194,8 @@ class AquaTrackApp {
 
     handleChangePasswordSubmit(e) {
         e.preventDefault();
+        if (!this.canPerform('canEditAdmin', 'Admin & Security Command Center', 'Submit Password Change')) return;
+
         const userId = document.getElementById('changePassUserId')?.value;
         const newPass = document.getElementById('newPasswordInput')?.value.trim();
         if (!userId || !newPass) return;
@@ -4482,6 +4872,750 @@ class AquaTrackApp {
                 </td>
             </tr>
         `).join('');
+    }
+
+    // ==========================================
+    // RENDER: TRUCKS & FLEET LOGISTICS
+    // ==========================================
+    populateTruckMonthDropdown() {
+        const monthSelect = document.getElementById('truckMonthFilter') || document.getElementById('truckFilterMonth');
+        if (!monthSelect) return;
+
+        const allLogs = this.store.getTruckLogs() || [];
+        const monthsSet = new Set();
+
+        const currentMonth = new Date().toISOString().substring(0, 7);
+        monthsSet.add(currentMonth);
+
+        allLogs.forEach(l => {
+            if (l.month) monthsSet.add(l.month);
+            else if (l.date && l.date.length >= 7) monthsSet.add(l.date.substring(0, 7));
+        });
+
+        if (this.selectedTruckMonth && this.selectedTruckMonth !== 'all') {
+            monthsSet.add(this.selectedTruckMonth);
+        }
+
+        const sortedMonths = Array.from(monthsSet).sort().reverse();
+
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const formatMonthLabel = (mStr) => {
+            const [y, m] = mStr.split('-');
+            const mIdx = parseInt(m, 10) - 1;
+            return `${monthNames[mIdx] || m} ${y}`;
+        };
+
+        let html = '<option value="all">📅 All Months (Full History)</option>';
+        sortedMonths.forEach(m => {
+            const isSelected = (this.selectedTruckMonth === m) ? 'selected' : '';
+            html += `<option value="${m}" ${isSelected}>📅 ${formatMonthLabel(m)} (${m})</option>`;
+        });
+
+        monthSelect.innerHTML = html;
+        if (this.selectedTruckMonth) {
+            monthSelect.value = this.selectedTruckMonth;
+        }
+    }
+
+    populateTruckSelectDropdowns() {
+        const trucks = this.store.getTrucks() || [];
+        
+        // 1. Populate Section Filter Dropdown
+        const filterSelect = document.getElementById('truckSelectFilter') || document.getElementById('truckFilterName');
+        if (filterSelect) {
+            const curVal = this.selectedTruckName || 'all';
+            let filterHtml = '<option value="all">🌟 All Trucks (Fleet Overview)</option>';
+            trucks.forEach(t => {
+                const name = (t.name || 'TRUCK').toUpperCase();
+                const plate = t.number ? ` (${t.number})` : '';
+                const isSelected = (curVal.toUpperCase() === name) ? 'selected' : '';
+                filterHtml += `<option value="${name}" ${isSelected}>🚚 ${name}${plate}</option>`;
+            });
+            filterSelect.innerHTML = filterHtml;
+            if (curVal) filterSelect.value = curVal;
+        }
+
+        // 2. Populate Trip Log Modal Truck Dropdown
+        const modalTruckSelect = document.getElementById('tlogTruck') || document.getElementById('logTruckName');
+        if (modalTruckSelect) {
+            const curTruckVal = modalTruckSelect.value || (trucks[0] ? trucks[0].name : 'SUPRO');
+            let modalTruckHtml = '';
+            trucks.forEach(t => {
+                const name = (t.name || 'TRUCK').toUpperCase();
+                const plate = t.number ? ` - ${t.number}` : '';
+                modalTruckHtml += `<option value="${name}">🚚 ${name}${plate}</option>`;
+            });
+            modalTruckSelect.innerHTML = modalTruckHtml;
+            if (curTruckVal) modalTruckSelect.value = curTruckVal;
+        }
+
+        // 3. Populate New Truck Modal Default Driver Select
+        const defaultDriverSelect = document.getElementById('newTruckDefaultDriver');
+        if (defaultDriverSelect) {
+            const staffList = this.store.getStaffList() || [];
+            let driverOpts = '<option value="">-- Select Default Driver (Optional) --</option>';
+            staffList.forEach(s => {
+                driverOpts += `<option value="${s.name}">${s.name} (${s.role || 'Staff'})</option>`;
+            });
+            if (!staffList.some(s => s.name.toUpperCase() === 'MANTU')) {
+                driverOpts += `<option value="MANTU">MANTU</option>`;
+            }
+            if (!staffList.some(s => s.name.toUpperCase() === 'CHANDAN')) {
+                driverOpts += `<option value="CHANDAN">CHANDAN</option>`;
+            }
+            defaultDriverSelect.innerHTML = driverOpts;
+        }
+    }
+
+    onTruckFilterChange() {
+        const monthSelect = document.getElementById('truckMonthFilter') || document.getElementById('truckFilterMonth');
+        const nameSelect = document.getElementById('truckSelectFilter') || document.getElementById('truckFilterName');
+        
+        if (monthSelect) this.selectedTruckMonth = monthSelect.value;
+        if (nameSelect) this.selectedTruckName = nameSelect.value;
+
+        this.renderTrucks();
+    }
+
+    resetTruckFilters() {
+        this.selectedTruckMonth = 'all';
+        this.selectedTruckName = 'all';
+        
+        const monthSelect = document.getElementById('truckMonthFilter') || document.getElementById('truckFilterMonth');
+        const nameSelect = document.getElementById('truckSelectFilter') || document.getElementById('truckFilterName');
+        const searchInput = document.getElementById('truckSearch') || document.getElementById('truckSearchInput');
+
+        if (monthSelect) monthSelect.value = 'all';
+        if (nameSelect) nameSelect.value = 'all';
+        if (searchInput) searchInput.value = '';
+
+        this.renderTrucks();
+    }
+
+    // ==========================================
+    // VEHICLE & FLEET MANAGEMENT (ADD NEW TRUCKS)
+    // ==========================================
+    openVehicleManagerModal() {
+        if (!this.canPerform('canEditTrucks', 'Trucks & Fleet Logistics', 'Manage Vehicle Fleet / Add Trucks')) return;
+
+        this.populateTruckSelectDropdowns();
+        const form = document.getElementById('newTruckForm');
+        if (form) form.reset();
+
+        this.renderFleetTable();
+        this.openModal('truckVehicleModal');
+    }
+
+    renderFleetTable() {
+        const tbody = document.getElementById('fleetVehiclesTableBody');
+        if (!tbody) return;
+
+        const trucks = this.store.getTrucks() || [];
+        const allLogs = this.store.getTruckLogs() || [];
+
+        if (trucks.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--text-muted);">No vehicles registered. Add a vehicle above.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = trucks.map(t => {
+            const tName = (t.name || '').toUpperCase();
+            const tLogs = allLogs.filter(l => (l.truckName || '').toUpperCase() === tName);
+            const tripsCount = tLogs.length;
+            const totalKm = tLogs.reduce((acc, l) => acc + (parseFloat(l.kmRun) || 0), 0);
+
+            return `
+                <tr>
+                    <td>
+                        <strong style="color: #38bdf8; font-size: 0.95rem;">🚚 ${t.name}</strong>
+                        ${t.model ? `<div style="font-size:0.75rem; color:var(--text-secondary);">${t.model}</div>` : ''}
+                    </td>
+                    <td style="font-weight: 700; font-size: 0.85rem; color: #f8fafc;">
+                        ${t.number || '<span style="color:var(--text-muted); font-size:0.8rem;">No Plate</span>'}
+                    </td>
+                    <td style="color: #a5b4fc; font-weight: 600;">
+                        👤 ${t.defaultDriver || 'MANTU'}
+                    </td>
+                    <td style="font-weight: 700;">
+                        ${tripsCount} trips
+                    </td>
+                    <td style="font-weight: 700; color: #34d399;">
+                        ${totalKm.toLocaleString('en-IN')} KM
+                    </td>
+                    <td>
+                        <button class="btn btn-outline-danger btn-sm" onclick="app.deleteVehicle('${t.id}')" title="Delete Vehicle" style="padding: 3px 8px; font-size: 0.75rem;">🗑️ Remove</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    handleAddTruckSubmit(e) {
+        e.preventDefault();
+        if (!this.canPerform('canEditTrucks', 'Trucks & Fleet Logistics', 'Add New Vehicle to Fleet')) return;
+
+        const nameInput = document.getElementById('newTruckName');
+        const numInput = document.getElementById('newTruckNumber');
+        const driverInput = document.getElementById('newTruckDefaultDriver');
+        const modelInput = document.getElementById('newTruckModel');
+
+        const name = (nameInput ? nameInput.value : '').trim().toUpperCase();
+        const number = (numInput ? numInput.value : '').trim().toUpperCase();
+        const defaultDriver = (driverInput ? driverInput.value : '').trim() || 'MANTU';
+        const model = (modelInput ? modelInput.value : '').trim();
+
+        if (!name) {
+            this.showToast('⚠️ Please enter a vehicle name (e.g. SUPRO, BOLERO, TATA ACE)', 'warning');
+            return;
+        }
+
+        const existing = (this.store.getTrucks() || []).find(t => t.name.toUpperCase() === name);
+        if (existing) {
+            this.showToast(`⚠️ A vehicle named "${name}" already exists in your fleet!`, 'warning');
+            return;
+        }
+
+        this.store.addTruck({
+            name,
+            number,
+            defaultDriver,
+            model
+        });
+
+        if (nameInput) nameInput.value = '';
+        if (numInput) numInput.value = '';
+        if (modelInput) modelInput.value = '';
+
+        this.showToast(`✅ Successfully registered new vehicle: ${name}!`, 'success');
+        this.populateTruckSelectDropdowns();
+        this.renderFleetTable();
+        this.renderTrucks();
+    }
+
+    deleteVehicle(truckId) {
+        if (!this.canPerform('canEditTrucks', 'Trucks & Fleet Logistics', 'Delete Vehicle')) return;
+
+        const trucks = this.store.getTrucks() || [];
+        const truck = trucks.find(t => t.id === truckId || t.name === truckId);
+        if (!truck) return;
+
+        if (trucks.length <= 1) {
+            this.showToast('⚠️ You must keep at least 1 vehicle registered in your fleet.', 'warning');
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to remove vehicle "${truck.name}" from the fleet roster? Existing trip history will remain.`)) return;
+
+        this.store.deleteTruck(truck.id);
+        this.showToast(`Vehicle ${truck.name} removed from fleet.`, 'info');
+        this.populateTruckSelectDropdowns();
+        this.renderFleetTable();
+        this.renderTrucks();
+    }
+
+    openTruckLogModal(logId = null) {
+        if (!this.canPerform('canEditTrucks', 'Trucks & Fleet Logistics', 'Add or Modify Truck Trip Log')) return;
+
+        const form = document.getElementById('truckLogForm');
+        if (form) form.reset();
+
+        this.populateTruckSelectDropdowns();
+
+        // Populate Driver Dropdown dynamically with registered drivers/staff
+        const driverSelect = document.getElementById('tlogDriver') || document.getElementById('logDriver');
+        if (driverSelect) {
+            const staffList = this.store.getStaffList() || [];
+            const drivers = staffList.filter(s => s.role === 'Driver');
+            const otherStaff = staffList.filter(s => s.role !== 'Driver');
+            
+            let driverOpts = '<option value="">-- Select Driver --</option>';
+            if (drivers.length > 0) {
+                driverOpts += `<optgroup label="Registered Drivers">`;
+                drivers.forEach(d => {
+                    driverOpts += `<option value="${d.name}">${d.name} (Driver)</option>`;
+                });
+                driverOpts += `</optgroup>`;
+            }
+            if (otherStaff.length > 0) {
+                driverOpts += `<optgroup label="Other Staff / Helpers">`;
+                otherStaff.forEach(s => {
+                    driverOpts += `<option value="${s.name}">${s.name} (${s.role || 'Staff'})</option>`;
+                });
+                driverOpts += `</optgroup>`;
+            }
+            if (!staffList.some(s => s.name.toUpperCase() === 'MANTU')) {
+                driverOpts += `<option value="MANTU">MANTU</option>`;
+            }
+            if (!staffList.some(s => s.name.toUpperCase() === 'CHANDAN')) {
+                driverOpts += `<option value="CHANDAN">CHANDAN</option>`;
+            }
+            driverSelect.innerHTML = driverOpts;
+        }
+
+        const idInput = document.getElementById('tlogId') || document.getElementById('truckLogId');
+        const modalTitle = document.getElementById('truckLogModalTitle');
+        const setVal = (ids, val) => {
+            for (const id of ids) {
+                const el = document.getElementById(id);
+                if (el) { el.value = (val !== undefined && val !== null) ? val : ''; return; }
+            }
+        };
+
+        if (logId) {
+            const log = this.store.getTruckLog(logId);
+            if (!log) return;
+
+            if (idInput) idInput.value = log.id;
+            if (modalTitle) modalTitle.textContent = '✏️ Edit Truck Trip & Logistics Entry';
+
+            setVal(['tlogDate', 'logDate'], log.date || this.getTodayStr());
+            setVal(['tlogTruck', 'logTruckName'], log.truckName || 'SUPRO');
+            if (driverSelect) driverSelect.value = log.driverName || 'MANTU';
+            setVal(['tlogTripType', 'logTripType'], log.tripType || 'Own Business Delivery');
+            setVal(['tlogProduct', 'logProduct'], log.product || '');
+            setVal(['tlogFrom', 'logFromLocation'], log.fromLocation || '');
+            setVal(['tlogTo', 'logToLocation'], log.toLocation || '');
+            setVal(['tlogKm', 'logKmRun'], log.kmRun !== undefined ? log.kmRun : '');
+            setVal(['tlogAmount', 'logTripAmount'], log.tripAmount !== undefined ? log.tripAmount : '');
+            setVal(['tlogPaymentStatus', 'logPaymentStatus'], log.paymentStatus || 'Paid');
+            setVal(['tlogFuelCost', 'logFuelCost'], log.fuelCost || '');
+            setVal(['tlogFuelLitres', 'logFuelLitres'], log.fuelLitres || '');
+            setVal(['tlogMaintenanceCost', 'logMaintenanceCost'], log.maintenanceCost || '');
+            setVal(['tlogMaintenanceNotes', 'logMaintenanceNotes'], log.maintenanceNotes || '');
+        } else {
+            if (idInput) idInput.value = '';
+            if (modalTitle) modalTitle.textContent = '🚚 New Truck Trip & Delivery Entry';
+
+            setVal(['tlogDate', 'logDate'], this.getTodayStr());
+            const defaultTruck = (this.selectedTruckName && this.selectedTruckName !== 'all') ? this.selectedTruckName : 'SUPRO';
+            setVal(['tlogTruck', 'logTruckName'], defaultTruck);
+            
+            if (driverSelect) {
+                const foundTruck = this.store.getTruck(defaultTruck);
+                driverSelect.value = (foundTruck && foundTruck.defaultDriver) ? foundTruck.defaultDriver : (defaultTruck === 'SUPRO' ? 'MANTU' : 'CHANDAN');
+            }
+            setVal(['tlogTripType', 'logTripType'], 'Own Business Delivery');
+            setVal(['tlogProduct', 'logProduct'], '');
+            setVal(['tlogFrom', 'logFromLocation'], '');
+            setVal(['tlogTo', 'logToLocation'], '');
+            setVal(['tlogKm', 'logKmRun'], '');
+            setVal(['tlogAmount', 'logTripAmount'], '');
+            setVal(['tlogPaymentStatus', 'logPaymentStatus'], 'Paid');
+            setVal(['tlogFuelCost', 'logFuelCost'], '');
+            setVal(['tlogFuelLitres', 'logFuelLitres'], '');
+            setVal(['tlogMaintenanceCost', 'logMaintenanceCost'], '');
+            setVal(['tlogMaintenanceNotes', 'logMaintenanceNotes'], '');
+        }
+
+        this.calcTruckModalPreview();
+        this.openModal('truckLogModal');
+    }
+
+    openTruckRefuelMaintenanceModal(truckName = '') {
+        this.openTruckLogModal();
+        if (truckName) {
+            const truckSelect = document.getElementById('tlogTruck') || document.getElementById('logTruckName');
+            if (truckSelect) truckSelect.value = truckName;
+        }
+        const setVal = (ids, val) => {
+            for (const id of ids) {
+                const el = document.getElementById(id);
+                if (el) { el.value = val; return; }
+            }
+        };
+        setVal(['tlogTripType', 'logTripType'], 'Internal Transfer');
+        setVal(['tlogProduct', 'logProduct'], 'Diesel Refill / Service Stop');
+        setVal(['tlogAmount', 'logTripAmount'], '0');
+        setVal(['tlogKm', 'logKmRun'], '0');
+        
+        setTimeout(() => {
+            const fuelInput = document.getElementById('tlogFuelCost') || document.getElementById('logFuelCost');
+            if (fuelInput) fuelInput.focus();
+        }, 150);
+    }
+
+    calcTruckModalPreview() {
+        const getNum = (ids) => {
+            for (const id of ids) {
+                const el = document.getElementById(id);
+                if (el && el.value) return parseFloat(el.value) || 0;
+            }
+            return 0;
+        };
+
+        const amount = getNum(['tlogAmount', 'logTripAmount']);
+        const fuel = getNum(['tlogFuelCost', 'logFuelCost']);
+        const maint = getNum(['tlogMaintenanceCost', 'logMaintenanceCost']);
+        const net = amount - fuel - maint;
+
+        const previewEl = document.getElementById('truckModalNetProfitPreview') || document.getElementById('modalTruckNetPreview');
+        if (previewEl) {
+            previewEl.textContent = (net >= 0 ? '+' : '-') + '₹' + Math.abs(net).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+            previewEl.style.color = net >= 0 ? '#10b981' : '#ef4444';
+        }
+    }
+
+    handleTruckLogSubmit(e) {
+        e.preventDefault();
+        if (!this.canPerform('canEditTrucks', 'Trucks & Fleet Logistics', 'Save Truck Trip Log')) return;
+
+        const getVal = (ids) => {
+            for (const id of ids) {
+                const el = document.getElementById(id);
+                if (el) return el.value;
+            }
+            return '';
+        };
+
+        const getNum = (ids) => {
+            for (const id of ids) {
+                const el = document.getElementById(id);
+                if (el && el.value) return parseFloat(el.value) || 0;
+            }
+            return 0;
+        };
+
+        const id = getVal(['tlogId', 'truckLogId']);
+        const date = getVal(['tlogDate', 'logDate']) || this.getTodayStr();
+        const truckName = getVal(['tlogTruck', 'logTruckName']) || 'SUPRO';
+        const driverName = getVal(['tlogDriver', 'logDriver']) || 'MANTU';
+        const tripType = getVal(['tlogTripType', 'logTripType']) || 'Own Business Delivery';
+        const product = getVal(['tlogProduct', 'logProduct']).trim() || 'General Goods';
+        const fromLocation = getVal(['tlogFrom', 'logFromLocation']).trim() || '-';
+        const toLocation = getVal(['tlogTo', 'logToLocation']).trim() || '-';
+        const kmRun = getNum(['tlogKm', 'logKmRun']);
+        const tripAmount = getNum(['tlogAmount', 'logTripAmount']);
+        const paymentStatus = getVal(['tlogPaymentStatus', 'logPaymentStatus']) || 'Paid';
+        const fuelCost = getNum(['tlogFuelCost', 'logFuelCost']);
+        const fuelLitres = getNum(['tlogFuelLitres', 'logFuelLitres']);
+        const maintenanceCost = getNum(['tlogMaintenanceCost', 'logMaintenanceCost']);
+        const maintenanceNotes = getVal(['tlogMaintenanceNotes', 'logMaintenanceNotes']).trim();
+
+        const logData = {
+            date,
+            month: date.substring(0, 7),
+            truckName,
+            driverName,
+            tripType,
+            product,
+            fromLocation,
+            toLocation,
+            kmRun,
+            tripAmount,
+            paymentStatus,
+            fuelCost,
+            fuelLitres,
+            maintenanceCost,
+            maintenanceNotes
+        };
+
+        if (id) {
+            this.store.updateTruckLog(id, logData);
+            this.showToast(`✅ Updated log entry for ${truckName}!`, 'success');
+        } else {
+            this.store.addTruckLog(logData);
+            this.showToast(`✅ New trip logged for ${truckName} (${kmRun} KM run)!`, 'success');
+        }
+
+        this.closeModal('truckLogModal');
+        this.renderTrucks();
+    }
+
+    editTruckLog(id) {
+        this.openTruckLogModal(id);
+    }
+
+    deleteTruckLog(id) {
+        if (!this.canPerform('canEditTrucks', 'Trucks & Fleet Logistics', 'Delete Truck Trip Log')) return;
+        if (!confirm('Are you sure you want to permanently delete this truck log entry?')) return;
+        
+        this.store.deleteTruckLog(id);
+        this.showToast('Truck log entry removed.', 'info');
+        this.renderTrucks();
+    }
+
+    renderTrucks() {
+        this.populateTruckMonthDropdown();
+        this.populateTruckSelectDropdowns();
+
+        const allLogs = this.store.getTruckLogs() || [];
+        const searchEl = document.getElementById('truckSearch') || document.getElementById('truckSearchInput');
+        const query = (searchEl ? searchEl.value : '').trim().toLowerCase();
+
+        // 1. Calculate Chronological "KM Run After Last Refueling" per Truck
+        const logsByTruck = {};
+        allLogs.forEach(l => {
+            const tName = (l.truckName || 'SUPRO').toUpperCase();
+            if (!logsByTruck[tName]) logsByTruck[tName] = [];
+            logsByTruck[tName].push(l);
+        });
+
+        const kmRefuelAnalysisMap = {}; // logId -> { kmSinceLastRefuel, isRefuelPoint, accumulatedKm }
+        
+        Object.keys(logsByTruck).forEach(tName => {
+            const truckList = logsByTruck[tName];
+            // Sort chronologically ascending
+            truckList.sort((a, b) => {
+                const cmpDate = (a.date || '').localeCompare(b.date || '');
+                if (cmpDate !== 0) return cmpDate;
+                return (a.id || '').localeCompare(b.id || '');
+            });
+
+            let runningKm = 0;
+            truckList.forEach(log => {
+                const km = parseFloat(log.kmRun) || 0;
+                const fuel = parseFloat(log.fuelCost) || 0;
+                const litres = parseFloat(log.fuelLitres) || 0;
+                const isRefuel = (fuel > 0 || litres > 0);
+
+                runningKm += km;
+
+                if (isRefuel) {
+                    kmRefuelAnalysisMap[log.id] = {
+                        kmSinceLastRefuel: runningKm,
+                        isRefuelPoint: true,
+                        accumulatedKm: runningKm
+                    };
+                    runningKm = 0; // Reset mileage counter after refueling
+                } else {
+                    kmRefuelAnalysisMap[log.id] = {
+                        kmSinceLastRefuel: runningKm,
+                        isRefuelPoint: false,
+                        accumulatedKm: runningKm
+                    };
+                }
+            });
+        });
+
+        // 2. Filter logs according to user's Selected Month, Truck Selector, and Search Query
+        let filteredLogs = allLogs.filter(log => {
+            // Month filter
+            if (this.selectedTruckMonth && this.selectedTruckMonth !== 'all') {
+                const logMonth = log.month || (log.date ? log.date.substring(0, 7) : '');
+                if (logMonth !== this.selectedTruckMonth) return false;
+            }
+
+            // Truck Name filter
+            if (this.selectedTruckName && this.selectedTruckName !== 'all') {
+                const tName = (log.truckName || '').toUpperCase();
+                if (tName !== this.selectedTruckName.toUpperCase()) return false;
+            }
+
+            // Search query
+            if (query) {
+                const p = (log.product || '').toLowerCase();
+                const d = (log.driverName || '').toLowerCase();
+                const from = (log.fromLocation || '').toLowerCase();
+                const to = (log.toLocation || '').toLowerCase();
+                const t = (log.truckName || '').toLowerCase();
+                const type = (log.tripType || '').toLowerCase();
+                const notes = (log.maintenanceNotes || '').toLowerCase();
+                return p.includes(query) || d.includes(query) || from.includes(query) || to.includes(query) || t.includes(query) || type.includes(query) || notes.includes(query);
+            }
+
+            return true;
+        });
+
+        // Sort filtered logs in descending order for table presentation (newest first)
+        filteredLogs.sort((a, b) => {
+            const cmp = (b.date || '').localeCompare(a.date || '');
+            if (cmp !== 0) return cmp;
+            return (b.id || '').localeCompare(a.id || '');
+        });
+
+        // 3. Compute Financial KPI Metrics for current selection
+        let totalTrips = filteredLogs.length;
+        let totalDistance = 0;
+        let totalRevenue = 0;
+        let totalFuelCost = 0;
+        let totalMaintenance = 0;
+
+        filteredLogs.forEach(l => {
+            totalDistance += parseFloat(l.kmRun) || 0;
+            totalRevenue += parseFloat(l.tripAmount) || 0;
+            totalFuelCost += parseFloat(l.fuelCost) || 0;
+            totalMaintenance += parseFloat(l.maintenanceCost) || 0;
+        });
+
+        const netOperatingProfit = totalRevenue - totalFuelCost - totalMaintenance;
+
+        // 4. Update KPI DOM Elements
+        const setMultiSafeText = (candidateIds, text) => {
+            for (const id of candidateIds) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = text;
+            }
+        };
+
+        const activeTruckLabel = this.selectedTruckName === 'all' ? 'All Trucks' : this.selectedTruckName;
+        const activeMonthLabel = this.selectedTruckMonth === 'all' ? 'All Time' : this.selectedTruckMonth;
+
+        setMultiSafeText(['truckKpiTotalTrips', 'truckKpiTrips'], totalTrips + ' Trips');
+        setMultiSafeText(['truckKpiTripsSub'], `${activeTruckLabel} • ${activeMonthLabel}`);
+        
+        setMultiSafeText(['truckKpiTotalKM', 'truckKpiDistance'], totalDistance.toLocaleString('en-IN') + ' KM');
+        setMultiSafeText(['truckKpiDistanceSub'], totalTrips > 0 ? `Avg ${(totalDistance / totalTrips).toFixed(1)} KM / trip` : '0 KM');
+
+        setMultiSafeText(['truckKpiTotalRevenue', 'truckKpiRevenue'], '₹' + totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+        setMultiSafeText(['truckKpiRevenueSub'], 'Freight & deliveries earnings');
+
+        setMultiSafeText(['truckKpiFuelCost'], '₹' + totalFuelCost.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+        setMultiSafeText(['truckKpiFuelCostSub'], 'Diesel refills & fuel expense');
+
+        setMultiSafeText(['truckKpiMaintenanceCost', 'truckKpiMaintenance'], '₹' + totalMaintenance.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+        setMultiSafeText(['truckKpiMaintenanceSub'], 'Repairs, servicing & parts');
+
+        const netText = (netOperatingProfit >= 0 ? '+₹' : '-₹') + Math.abs(netOperatingProfit).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        setMultiSafeText(['truckKpiNetProfit'], netText);
+        const profitMargin = totalRevenue > 0 ? ((netOperatingProfit / totalRevenue) * 100).toFixed(1) : '0';
+        setMultiSafeText(['truckKpiNetProfitSub'], `Margin: ${profitMargin}% of gross revenue`);
+
+        const netEl = document.getElementById('truckKpiNetProfit');
+        if (netEl) {
+            netEl.style.color = netOperatingProfit >= 0 ? '#10b981' : '#ef4444';
+        }
+
+        // 5. Render Detailed Logs Table Body
+        const tbody = document.getElementById('truckLogsTableBody') || document.getElementById('trucksTableBody');
+        if (!tbody) return;
+
+        if (filteredLogs.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="13" style="text-align: center; padding: 36px 20px; color: var(--text-muted);">
+                        <div style="font-size: 2rem; margin-bottom: 8px;">🚚</div>
+                        <div style="font-weight: 700; font-size: 1rem; color: var(--text-secondary);">No trip or logistics records found for this view</div>
+                        <div style="font-size: 0.84rem; margin-top: 4px;">Click <strong>"+ Add Truck Trip / Delivery"</strong> to log trips, diesel refills, and maintenance expenses.</div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = filteredLogs.map(log => {
+            const netProfit = (parseFloat(log.tripAmount) || 0) - (parseFloat(log.fuelCost) || 0) - (parseFloat(log.maintenanceCost) || 0);
+            const tName = (log.truckName || 'SUPRO').toUpperCase();
+            
+            let truckBadgeClass = 'badge-supro';
+            if (tName === 'BOLERO') truckBadgeClass = 'badge-bolero';
+            else if (tName !== 'SUPRO') truckBadgeClass = 'badge-info';
+
+            // Payment status badge
+            let paymentBadge = '<span class="badge badge-success">✓ Paid</span>';
+            if (log.paymentStatus === 'Due') {
+                paymentBadge = '<span class="badge badge-danger">⏳ Payment Due</span>';
+            } else if (log.paymentStatus === 'Partial') {
+                paymentBadge = '<span class="badge badge-warning">⚡ Partial</span>';
+            }
+
+            // Trip Type Badge
+            let typeBadge = '';
+            if (log.tripType === 'Third-Party Delivery') {
+                typeBadge = '<span class="badge badge-purple" style="font-size: 0.68rem; margin-left: 4px;">👥 3rd-Party</span>';
+            } else if (log.tripType === 'Internal Transfer') {
+                typeBadge = '<span class="badge badge-secondary" style="font-size: 0.68rem; margin-left: 4px;">🔄 Internal</span>';
+            }
+
+            // Diesel Refuel Details
+            const fuelCost = parseFloat(log.fuelCost) || 0;
+            const fuelLitres = parseFloat(log.fuelLitres) || 0;
+            let refuelDisplay = '<span style="color: var(--text-muted); font-size: 0.82rem;">-</span>';
+            if (fuelCost > 0 || fuelLitres > 0) {
+                refuelDisplay = `
+                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                        <span class="refuel-pill">⛽ ₹${fuelCost.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        ${fuelLitres > 0 ? `<span style="font-size: 0.74rem; color: var(--text-secondary); font-weight: 600;">${fuelLitres} Litres</span>` : ''}
+                    </div>
+                `;
+            }
+
+            // KM Run After Last Refueling
+            const refuelAnalysis = kmRefuelAnalysisMap[log.id] || { kmSinceLastRefuel: log.kmRun, isRefuelPoint: false };
+            let kmAfterRefuelDisplay = '';
+            if (refuelAnalysis.isRefuelPoint) {
+                kmAfterRefuelDisplay = `
+                    <div class="km-run-badge refuel-cycle">
+                        <span>⚡ <strong>${refuelAnalysis.kmSinceLastRefuel} KM</strong></span>
+                        <span style="font-size: 0.68rem; opacity: 0.9;">between refills</span>
+                    </div>
+                `;
+            } else {
+                kmAfterRefuelDisplay = `
+                    <div class="km-run-badge">
+                        <span><strong>${refuelAnalysis.kmSinceLastRefuel} KM</strong></span>
+                        <span style="font-size: 0.68rem; color: var(--text-muted);">since last refill</span>
+                    </div>
+                `;
+            }
+
+            // Maintenance Details
+            const maintCost = parseFloat(log.maintenanceCost) || 0;
+            let maintDisplay = '<span style="color: var(--text-muted); font-size: 0.82rem;">-</span>';
+            if (maintCost > 0 || log.maintenanceNotes) {
+                maintDisplay = `
+                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                        ${maintCost > 0 ? `<strong style="color: #f59e0b; font-size: 0.88rem;">🔧 ₹${maintCost.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>` : ''}
+                        ${log.maintenanceNotes ? `<span style="font-size: 0.74rem; color: var(--text-secondary); max-width: 150px; line-height: 1.2;">${log.maintenanceNotes}</span>` : ''}
+                    </div>
+                `;
+            }
+
+            const netColor = netProfit >= 0 ? '#10b981' : '#ef4444';
+
+            return `
+                <tr>
+                    <td style="white-space: nowrap; font-weight: 600; font-size: 0.85rem;">
+                        📅 ${log.date}
+                    </td>
+                    <td>
+                        <span class="badge badge-truck ${truckBadgeClass}">🚚 ${tName}</span>
+                    </td>
+                    <td style="font-weight: 700; color: #38bdf8;">
+                        👤 ${log.driverName || 'MANTU'}
+                    </td>
+                    <td>
+                        <div style="font-weight: 600; color: var(--text-primary); font-size: 0.88rem;">
+                            ${log.product || 'General Delivery'}
+                            ${typeBadge}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="route-display">
+                            <span class="loc-point">🚩 ${log.fromLocation || 'Factory / Depot'}</span>
+                            <span class="loc-arrow">➔</span>
+                            <span class="loc-point">🏁 ${log.toLocation || 'Retailer / Hub'}</span>
+                        </div>
+                    </td>
+                    <td style="font-weight: 800; color: #f8fafc; font-size: 0.95rem; white-space: nowrap;">
+                        ${parseFloat(log.kmRun || 0).toLocaleString('en-IN')} <span style="font-size: 0.75rem; color: var(--text-muted);">KM</span>
+                    </td>
+                    <td style="font-weight: 800; color: #38bdf8; font-size: 0.95rem; white-space: nowrap;">
+                        ₹${(parseFloat(log.tripAmount) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td>
+                        ${paymentBadge}
+                    </td>
+                    <td>
+                        ${refuelDisplay}
+                    </td>
+                    <td>
+                        ${kmAfterRefuelDisplay}
+                    </td>
+                    <td>
+                        ${maintDisplay}
+                    </td>
+                    <td style="font-weight: 800; font-size: 0.95rem; color: ${netColor}; white-space: nowrap;">
+                        ${netProfit >= 0 ? '+' : ''}₹${netProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <button class="btn btn-secondary btn-sm" onclick="app.editTruckLog('${log.id}')" title="Edit trip entry" style="padding: 4px 8px; font-size: 0.78rem;">✏️ Edit</button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="app.deleteTruckLog('${log.id}')" title="Delete trip entry" style="padding: 4px 8px; font-size: 0.78rem;">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
 
     reloadSeedData() {
