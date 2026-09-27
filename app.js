@@ -1,0 +1,3205 @@
+/**
+ * AquaTrack Pro - Dealership & Water Business ERP Logic
+ */
+
+// ==========================================
+// 1. DATA STORE (Persistent LocalStorage)
+// ==========================================
+class DataStore {
+    constructor() {
+        this.STORAGE_KEY = 'aquatrack_pro_fresh_v2';
+        this.data = {
+            products: [],
+            stores: [],
+            purchases: [],
+            sales: [],
+            drumOrders: [],
+            payments: [],
+            staff: [],
+            staffDeliveries: [],
+            staffMonthlySalaries: []
+        };
+        this.load();
+    }
+
+    load() {
+        const stored = localStorage.getItem(this.STORAGE_KEY);
+        if (stored) {
+            try {
+                this.data = JSON.parse(stored);
+            } catch (e) {
+                console.error('Failed to parse storage, loading clean start', e);
+                this.loadSeedData();
+            }
+        } else {
+            this.loadSeedData();
+        }
+
+        // Ensure collections exist
+        if (!this.data.products) this.data.products = [];
+        if (!this.data.stores) this.data.stores = [];
+        if (!this.data.purchases) this.data.purchases = [];
+        if (!this.data.sales) this.data.sales = [];
+        if (!this.data.drumOrders) this.data.drumOrders = [];
+        if (!this.data.payments) this.data.payments = [];
+        if (!this.data.staffDeliveries) this.data.staffDeliveries = [];
+        if (!this.data.staffMonthlySalaries) this.data.staffMonthlySalaries = [];
+
+        if (!Array.isArray(this.data.staff) || this.data.staff.length === 0) {
+            this.data.staff = [
+                { id: 'st_mantu', name: 'MANTU', role: 'Driver', baseFixedSalary: 12000, phone: '9876543210' },
+                { id: 'st_chandan', name: 'CHANDAN', role: 'Helper', baseFixedSalary: 9000, phone: '9876543211' }
+            ];
+        } else {
+            this.data.staff = this.data.staff.map((s, idx) => ({
+                id: s.id || ('st_' + (idx + 1) + '_' + (s.name ? s.name.toLowerCase().replace(/\s+/g, '_') : 'staff')),
+                name: s.name || ('Staff ' + (idx + 1)),
+                role: s.role === 'Helper' ? 'Helper' : 'Driver',
+                baseFixedSalary: parseFloat(s.baseFixedSalary !== undefined ? s.baseFixedSalary : (s.fixedSalary || 0)) || 10000,
+                phone: s.phone || ''
+            }));
+        }
+    }
+
+    save() {
+        try {
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.data));
+        } catch (e) {
+            console.error('Failed to save to localStorage', e);
+        }
+    }
+
+    loadSeedData() {
+        this.data.products = [
+            { id: 'p1', category: 'water', name: 'Packaged Drinking Water', size: '500ml', unitsPerBox: 24, buyPrice: 5.00, sellPrice: 10.00, stock: 0 },
+            { id: 'p2', category: 'water', name: 'Packaged Drinking Water', size: '750ml', unitsPerBox: 20, buyPrice: 7.50, sellPrice: 15.00, stock: 0 },
+            { id: 'p3', category: 'water', name: 'Packaged Drinking Water', size: '1L', unitsPerBox: 12, buyPrice: 10.00, sellPrice: 20.00, stock: 0 },
+            { id: 'p4', category: 'water', name: 'Packaged Drinking Water', size: '2L', unitsPerBox: 9, buyPrice: 16.00, sellPrice: 30.00, stock: 0 },
+            { id: 'p5', category: 'drinks', name: 'Cold Drink / Cola', size: '250ml', unitsPerBox: 30, buyPrice: 12.00, sellPrice: 20.00, stock: 0 },
+            { id: 'p6', category: 'drinks', name: 'Cold Drink / Lemon-Lime', size: '500ml', unitsPerBox: 24, buyPrice: 20.00, sellPrice: 35.00, stock: 0 },
+            { id: 'p7', category: 'drinks', name: 'Cold Drink / Mango', size: '600ml', unitsPerBox: 24, buyPrice: 22.00, sellPrice: 40.00, stock: 0 },
+            { id: 'p8', category: 'drums', name: '20L Water Drum', size: '20L Drum', unitsPerBox: 1, buyPrice: 12.00, sellPrice: 35.00, stock: 0 }
+        ];
+
+        this.data.stores = [
+            { id: 's1', name: 'Store #1', owner: 'Owner Name', phone: '', address: '', balanceDue: 0, totalBought: 0, totalPaid: 0 },
+            { id: 's2', name: 'Store #2', owner: 'Owner Name', phone: '', address: '', balanceDue: 0, totalBought: 0, totalPaid: 0 }
+        ];
+
+        this.data.staff = [
+            { id: 'st_mantu', name: 'MANTU', role: 'Driver', baseFixedSalary: 12000, phone: '9876543210' },
+            { id: 'st_chandan', name: 'CHANDAN', role: 'Helper', baseFixedSalary: 9000, phone: '9876543211' }
+        ];
+
+        this.data.purchases = [];
+        this.data.sales = [];
+        this.data.drumOrders = [];
+        this.data.payments = [];
+        this.data.staffDeliveries = [];
+        this.data.staffMonthlySalaries = [];
+
+        this.save();
+    }
+
+    loadDemoSeedData() {
+        const today = new Date().toISOString().split('T')[0];
+        const currentMonth = today.substring(0, 7);
+
+        this.data.products = [
+            { id: 'p1', category: 'water', name: 'AquaPure Mineral Water', size: '500ml', unitsPerBox: 24, buyPrice: 5.50, sellPrice: 10.00, stock: 450 },
+            { id: 'p2', category: 'water', name: 'AquaPure Mineral Water', size: '750ml', unitsPerBox: 20, buyPrice: 8.00, sellPrice: 15.00, stock: 320 },
+            { id: 'p3', category: 'water', name: 'AquaPure Mineral Water', size: '1L', unitsPerBox: 12, buyPrice: 10.50, sellPrice: 20.00, stock: 600 },
+            { id: 'p4', category: 'water', name: 'AquaPure Mineral Water', size: '2L', unitsPerBox: 9, buyPrice: 18.00, sellPrice: 30.00, stock: 180 },
+            { id: 'p5', category: 'drinks', name: 'Thunder Cola', size: '250ml Can', unitsPerBox: 30, buyPrice: 14.00, sellPrice: 22.00, stock: 240 },
+            { id: 'p6', category: 'drinks', name: 'Thunder Cola', size: '500ml Bottle', unitsPerBox: 24, buyPrice: 22.00, sellPrice: 35.00, stock: 150 },
+            { id: 'p7', category: 'drinks', name: 'Lemon Zing Soda', size: '600ml', unitsPerBox: 24, buyPrice: 16.00, sellPrice: 25.00, stock: 200 },
+            { id: 'p8', category: 'drinks', name: 'Mango Blast Juice', size: '600ml', unitsPerBox: 24, buyPrice: 24.00, sellPrice: 40.00, stock: 175 },
+            { id: 'p9', category: 'drums', name: 'AquaPure 20L Water Drum', size: '20L Drum', unitsPerBox: 1, buyPrice: 12.00, sellPrice: 35.00, stock: 85 }
+        ];
+
+        this.data.stores = [
+            { id: 's1', name: 'Krishna Supermarket', owner: 'Rajesh Sharma', phone: '9876543210', address: 'Shop 14, Main Market Road', balanceDue: 1450, totalBought: 7450, totalPaid: 6000 },
+            { id: 's2', name: 'City Express Mart', owner: 'Anil Verma', phone: '9811223344', address: 'Plot 4B, Sector 12 Market', balanceDue: 2800, totalBought: 9800, totalPaid: 7000 },
+            { id: 's3', name: 'Highway Dhaba & Refreshments', owner: 'Sunil Kumar', phone: '9845098450', address: 'National Highway 48 Bypass', balanceDue: 600, totalBought: 3600, totalPaid: 3000 },
+            { id: 's4', name: 'Golden Oasis Corner Store', owner: 'Pooja Gupta', phone: '9765432109', address: 'Block C Commercial Complex', balanceDue: 0, totalBought: 4200, totalPaid: 4200 }
+        ];
+
+        this.data.staff = [
+            { id: 'st_mantu', name: 'MANTU', role: 'Driver', baseFixedSalary: 12000, phone: '9876543210' },
+            { id: 'st_chandan', name: 'CHANDAN', role: 'Helper', baseFixedSalary: 9000, phone: '9876543211' }
+        ];
+
+        this.data.purchases = [
+            { id: 'pur1', date: today, factory: 'National Bottling Plant #2', productId: 'p3', productName: 'AquaPure Mineral Water (1L)', qty: 300, rate: 10.50, total: 3150, notes: 'Morning batch arrival' }
+        ];
+
+        this.data.sales = [
+            { id: 'sal1', date: today, storeId: 's1', storeName: 'Krishna Supermarket', productId: 'p3', productName: 'AquaPure Mineral Water 1L', qty: 60, rate: 20.00, total: 1200, buyPrice: 10.50, profit: 570, status: 'Paid', driverName: 'MANTU', helperNames: ['CHANDAN'] }
+        ];
+
+        this.data.drumOrders = [
+            { id: 'dr1', date: today, storeId: 's1', customer: 'Krishna Supermarket', qty: 10, rate: 35.00, total: 350.00, emptiesReturned: 8, status: 'Delivered', driver1: 'MANTU', driver2: 'CHANDAN' }
+        ];
+
+        this.data.payments = [
+            { id: 'pay1', storeId: 's1', storeName: 'Krishna Supermarket', date: today, amount: 1200, note: 'GPay UPI Settlement' }
+        ];
+
+        this.data.staffDeliveries = [
+            { id: 'std1', staffId: 'st_mantu', staffName: 'MANTU', role: 'Driver', date: today, month: currentMonth, storeName: 'Krishna Supermarket', boxCount: 5, ratePerBox: 2, totalCommission: 10, source: 'Store Sale' },
+            { id: 'std2', staffId: 'st_chandan', staffName: 'CHANDAN', role: 'Helper', date: today, month: currentMonth, storeName: 'Krishna Supermarket', boxCount: 5, ratePerBox: 1, totalCommission: 5, source: 'Store Sale' }
+        ];
+
+        this.data.staffMonthlySalaries = [
+            { id: 'sms_mantu_' + currentMonth, staffId: 'st_mantu', month: currentMonth, fixedSalary: 12000, extraIncome: 500, advanceSalary: 1000, paidAmount: 0, paidDate: '', paymentMode: 'Cash', notes: 'Advance for festivals', status: 'Pending' },
+            { id: 'sms_chandan_' + currentMonth, staffId: 'st_chandan', month: currentMonth, fixedSalary: 9000, extraIncome: 200, advanceSalary: 500, paidAmount: 0, paidDate: '', paymentMode: 'Cash', notes: '', status: 'Pending' }
+        ];
+
+        this.save();
+    }
+
+    // Products
+    getProducts() { return this.data.products || []; }
+    getProduct(id) { return (this.data.products || []).find(p => p.id === id); }
+    addProduct(p) {
+        p.id = 'p_' + Date.now();
+        if (!this.data.products) this.data.products = [];
+        this.data.products.push(p);
+        this.save();
+        return p;
+    }
+    updateProduct(id, updated) {
+        const idx = (this.data.products || []).findIndex(p => p.id === id);
+        if (idx !== -1) {
+            this.data.products[idx] = { ...this.data.products[idx], ...updated };
+            this.save();
+        }
+    }
+    deleteProduct(id) {
+        this.data.products = (this.data.products || []).filter(p => p.id !== id);
+        this.save();
+    }
+    adjustStock(id, qtyDelta) {
+        const p = this.getProduct(id);
+        if (p) {
+            p.stock = (p.stock || 0) + qtyDelta;
+            this.save();
+        }
+    }
+
+    // Purchases (Factory Inflow)
+    getPurchases() { return this.data.purchases || []; }
+    addPurchase(item) {
+        item.id = 'pur_' + Date.now();
+        if (!this.data.purchases) this.data.purchases = [];
+        this.data.purchases.unshift(item);
+        this.adjustStock(item.productId, item.qty);
+        this.save();
+        return item;
+    }
+    deletePurchase(id) {
+        const pur = (this.data.purchases || []).find(x => x.id === id);
+        if (pur) {
+            this.adjustStock(pur.productId, -pur.qty);
+            this.data.purchases = this.data.purchases.filter(x => x.id !== id);
+            this.save();
+        }
+    }
+
+    // Sales (Store Outflow & Profit)
+    getSales() { return this.data.sales || []; }
+    addSale(item) {
+        item.id = 'sal_' + Date.now();
+        if (!this.data.sales) this.data.sales = [];
+        this.data.sales.unshift(item);
+        this.adjustStock(item.productId, -item.qty);
+
+        const store = this.getStore(item.storeId);
+        if (store) {
+            store.totalBought = (store.totalBought || 0) + item.total;
+            if (item.status === 'Paid') {
+                store.totalPaid = (store.totalPaid || 0) + item.total;
+                this.addPayment({
+                    storeId: store.id,
+                    storeName: store.name,
+                    date: item.date,
+                    amount: item.total,
+                    note: 'Auto-recorded full payment for Sale #' + item.id.substring(4)
+                }, false);
+            } else if (item.status === 'Partial' && item.paidAmount > 0) {
+                store.totalPaid = (store.totalPaid || 0) + item.paidAmount;
+                this.addPayment({
+                    storeId: store.id,
+                    storeName: store.name,
+                    date: item.date,
+                    amount: item.paidAmount,
+                    note: 'Partial payment on delivery for Sale #' + item.id.substring(4)
+                }, false);
+            }
+            store.balanceDue = store.totalBought - (store.totalPaid || 0);
+        }
+        this.save();
+        return item;
+    }
+    deleteSale(id) {
+        const s = (this.data.sales || []).find(x => x.id === id);
+        if (s) {
+            this.adjustStock(s.productId, s.qty);
+            const store = this.getStore(s.storeId);
+            if (store) {
+                store.totalBought = Math.max(0, (store.totalBought || 0) - s.total);
+                store.balanceDue = Math.max(0, store.totalBought - (store.totalPaid || 0));
+            }
+            this.data.sales = this.data.sales.filter(x => x.id !== id);
+            this.data.staffDeliveries = (this.data.staffDeliveries || []).filter(d => d.saleId !== id);
+            this.save();
+        }
+    }
+
+    // 20L Drum Orders
+    getDrumOrders() { return this.data.drumOrders || []; }
+    addDrumOrder(item) {
+        item.id = 'dr_' + Date.now();
+        if (!this.data.drumOrders) this.data.drumOrders = [];
+        this.data.drumOrders.unshift(item);
+        if (item.status === 'Delivered') {
+            const drumProd = (this.data.products || []).find(p => p.category === 'drums' || p.size === '20L');
+            if (drumProd) this.adjustStock(drumProd.id, -item.qty);
+        }
+        this.save();
+        return item;
+    }
+    updateDrumStatus(id, newStatus, emptiesReturned = null) {
+        const order = (this.data.drumOrders || []).find(d => d.id === id);
+        if (order) {
+            const oldStatus = order.status;
+            order.status = newStatus;
+            if (emptiesReturned !== null) order.emptiesReturned = emptiesReturned;
+            
+            if (oldStatus !== 'Delivered' && newStatus === 'Delivered') {
+                const drumProd = (this.data.products || []).find(p => p.category === 'drums' || p.size === '20L');
+                if (drumProd) this.adjustStock(drumProd.id, -order.qty);
+            }
+            this.save();
+        }
+    }
+    deleteDrumOrder(id) {
+        this.data.drumOrders = (this.data.drumOrders || []).filter(d => d.id !== id);
+        this.save();
+    }
+
+    // Stores & Khata Ledger
+    getStores() { return this.data.stores || []; }
+    getStore(id) { return (this.data.stores || []).find(s => s.id === id); }
+    addStore(store) {
+        store.id = 's_' + Date.now();
+        const opening = parseFloat(store.openingBalance) || 0;
+        store.totalBought = opening;
+        store.totalPaid = 0;
+        store.balanceDue = opening;
+        if (!this.data.stores) this.data.stores = [];
+        this.data.stores.push(store);
+        this.save();
+        return store;
+    }
+    updateStore(id, updated) {
+        const idx = (this.data.stores || []).findIndex(s => s.id === id);
+        if (idx !== -1) {
+            this.data.stores[idx] = { ...this.data.stores[idx], ...updated };
+            this.save();
+        }
+    }
+    deleteStore(id) {
+        this.data.stores = (this.data.stores || []).filter(s => s.id !== id);
+        this.save();
+    }
+
+    // Payments
+    getPayments() { return this.data.payments || []; }
+    addPayment(item, saveImmediately = true) {
+        item.id = 'pay_' + Date.now() + Math.floor(Math.random() * 100);
+        if (!this.data.payments) this.data.payments = [];
+        this.data.payments.unshift(item);
+        if (saveImmediately) {
+            const store = this.getStore(item.storeId);
+            if (store) {
+                store.totalPaid = (store.totalPaid || 0) + item.amount;
+                store.balanceDue = (store.totalBought || 0) - store.totalPaid;
+            }
+            this.save();
+        }
+        return item;
+    }
+
+    // Staff, Deliveries & Salary
+    getStaffList() {
+        return this.data.staff || [];
+    }
+    getStaff(id) {
+        return (this.data.staff || []).find(s => s.id === id);
+    }
+    getStaffByName(name) {
+        if (!name) return null;
+        return (this.data.staff || []).find(s => s.name.trim().toLowerCase() === name.trim().toLowerCase());
+    }
+    addStaff(staff) {
+        staff.id = 'st_' + Date.now();
+        if (!staff.baseFixedSalary) staff.baseFixedSalary = 0;
+        if (!this.data.staff) this.data.staff = [];
+        this.data.staff.push(staff);
+        this.save();
+        return staff;
+    }
+    updateStaff(id, updated) {
+        const idx = (this.data.staff || []).findIndex(s => s.id === id);
+        if (idx !== -1) {
+            this.data.staff[idx] = { ...this.data.staff[idx], ...updated };
+            this.save();
+        }
+    }
+    deleteStaff(id) {
+        this.data.staff = (this.data.staff || []).filter(s => s.id !== id);
+        this.data.staffDeliveries = (this.data.staffDeliveries || []).filter(d => d.staffId !== id);
+        this.data.staffMonthlySalaries = (this.data.staffMonthlySalaries || []).filter(m => m.staffId !== id);
+        this.save();
+    }
+    getStaffDeliveries(staffId = null, month = null) {
+        let list = this.data.staffDeliveries || [];
+        if (staffId) {
+            list = list.filter(d => d.staffId === staffId || d.staffName === staffId);
+        }
+        if (month) {
+            list = list.filter(d => (d.month === month) || (d.date && d.date.startsWith(month)));
+        }
+        return list;
+    }
+    addStaffDelivery(delivery) {
+        delivery.id = 'std_' + Date.now() + Math.floor(Math.random() * 100);
+        if (!delivery.month && delivery.date) {
+            delivery.month = delivery.date.substring(0, 7);
+        }
+        if (!this.data.staffDeliveries) this.data.staffDeliveries = [];
+        this.data.staffDeliveries.unshift(delivery);
+        this.save();
+        return delivery;
+    }
+    deleteStaffDelivery(id) {
+        this.data.staffDeliveries = (this.data.staffDeliveries || []).filter(d => d.id !== id);
+        this.save();
+    }
+    getStaffMonthlySalary(staffId, month) {
+        const staff = this.getStaff(staffId);
+        const baseFixed = staff ? (staff.baseFixedSalary || 0) : 0;
+        const existing = (this.data.staffMonthlySalaries || []).find(m => m.staffId === staffId && m.month === month);
+        if (existing) return existing;
+        
+        return {
+            id: `sms_${staffId}_${month}`,
+            staffId: staffId,
+            month: month,
+            fixedSalary: baseFixed,
+            extraIncome: 0,
+            advanceSalary: 0,
+            paidAmount: 0,
+            paidDate: '',
+            paymentMode: 'Cash',
+            notes: '',
+            status: 'Pending'
+        };
+    }
+    saveStaffMonthlySalary(record) {
+        if (!record.id) record.id = `sms_${record.staffId}_${record.month}`;
+        if (!this.data.staffMonthlySalaries) this.data.staffMonthlySalaries = [];
+        const idx = this.data.staffMonthlySalaries.findIndex(m => m.staffId === record.staffId && m.month === record.month);
+        if (idx !== -1) {
+            this.data.staffMonthlySalaries[idx] = { ...this.data.staffMonthlySalaries[idx], ...record };
+        } else {
+            this.data.staffMonthlySalaries.push(record);
+        }
+        this.save();
+        return record;
+    }
+    getAllStaffMonthlyRecords(staffId) {
+        return (this.data.staffMonthlySalaries || []).filter(m => m.staffId === staffId);
+    }
+}
+
+// ==========================================
+// 2. MAIN APPLICATION CONTROLLER
+// ==========================================
+class AquaTrackApp {
+    constructor() {
+        this.store = new DataStore();
+        this.currentSection = 'dashboard';
+        this.productCategoryFilter = 'all';
+        this.drumStatusFilter = 'all';
+        this.staffRoleFilter = 'all';
+        
+        const now = new Date();
+        this.selectedStaffMonth = now.toISOString().substring(0, 7); // YYYY-MM
+        this.selectedLedgerMonth = this.selectedStaffMonth;
+        this.selectedLedgerStaffId = null;
+
+        this.init();
+    }
+
+    init() {
+        try {
+            this.setupNavigation();
+            this.setupTheme();
+            this.setupEventListeners();
+            this.setupDateDefaults();
+            this.setupModalEscape();
+            this.renderAll();
+        } catch (e) {
+            console.error('Error in AquaTrackApp init:', e);
+        }
+    }
+
+    getTodayStr() {
+        return new Date().toISOString().split('T')[0];
+    }
+
+    setupDateDefaults() {
+        const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+        const formattedDate = new Date().toLocaleDateString('en-IN', options);
+        
+        const sbDate = document.getElementById('sidebarDate');
+        if (sbDate) sbDate.textContent = '📅 ' + formattedDate;
+
+        const dailyDateInput = document.getElementById('dailyReportDate');
+        if (dailyDateInput) dailyDateInput.value = this.getTodayStr();
+    }
+
+    setupNavigation() {
+        document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const section = item.dataset.section;
+                this.navigateTo(section);
+            });
+        });
+
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        if (menuToggle && sidebar) {
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('open');
+            });
+        }
+    }
+
+    navigateTo(sectionId) {
+        this.currentSection = sectionId;
+        
+        document.querySelectorAll('.sidebar-nav .nav-item').forEach(el => {
+            el.classList.toggle('active', el.dataset.section === sectionId);
+        });
+
+        document.querySelectorAll('.app-section').forEach(sec => {
+            sec.classList.remove('active');
+        });
+        const target = document.getElementById('section-' + sectionId);
+        if (target) target.classList.add('active');
+
+        const titles = {
+            'dashboard': { title: 'Executive Dashboard', sub: 'Overview of Stock, Come-In, Goes-Out, Sales, 20L Drums & Store Balances' },
+            'products': { title: 'Product & Stock Management', sub: 'Water Bottles (500ml/750ml/1L/2L), Cold Drinks & 20L Drums' },
+            'purchases': { title: 'Factory Purchases (Stock Inflow)', sub: 'Record & Audit factory purchases coming into stock' },
+            'sales': { title: 'Store Sales & Profit Tracker', sub: 'Track product sales to stores with live profit margin' },
+            'drums': { title: '20L Water Drum Company Hub', sub: 'Manage 20L drum orders, deliveries & empty returns' },
+            'stores': { title: 'Store Accounts & Ledger (Khata)', sub: 'Track retailer billings, payments, and outstanding balance' },
+            'daily': { title: 'Daily Business Summary & P&L', sub: 'Daily Inflow (Come-In) vs Outflow (Goes-Out) audit and net profits' },
+            'staff': { title: 'Drivers & Staff Management', sub: 'Manage delivery drivers, helpers, monthly salaries, advances & box commissions' },
+            'analytics': { title: 'Product Demand & Sales Intelligence', sub: 'Velocity, Long-Run Performers, Store Penetration & Product Deep-Dive Analytics' }
+        };
+
+        const topTitle = document.getElementById('topbarTitle');
+        const topSub = document.getElementById('topbarSubtitle');
+        if (topTitle && titles[sectionId]) topTitle.textContent = titles[sectionId].title;
+        if (topSub && titles[sectionId]) topSub.textContent = titles[sectionId].sub;
+
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) sidebar.classList.remove('open');
+
+        this.renderCurrentSection();
+    }
+
+    setupTheme() {
+        const savedTheme = localStorage.getItem('aquatrack_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) themeToggle.textContent = savedTheme === 'light' ? '🌞' : '🌙';
+    }
+
+    toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme') || 'dark';
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('aquatrack_theme', next);
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) themeToggle.textContent = next === 'light' ? '🌞' : '🌙';
+    }
+
+    setupEventListeners() {
+        const topAddSale = document.getElementById('topAddSaleBtn');
+        if (topAddSale) topAddSale.onclick = () => this.openSaleModal();
+
+        const topAddPur = document.getElementById('topAddPurchaseBtn');
+        if (topAddPur) topAddPur.onclick = () => this.openPurchaseModal();
+
+        const topAddDrum = document.getElementById('topAddDrumBtn');
+        if (topAddDrum) topAddDrum.onclick = () => this.openDrumOrderModal();
+
+        document.getElementById('productForm')?.addEventListener('submit', (e) => this.handleProductSubmit(e));
+        document.getElementById('purchaseForm')?.addEventListener('submit', (e) => this.handlePurchaseSubmit(e));
+        document.getElementById('saleForm')?.addEventListener('submit', (e) => this.handleSaleSubmit(e));
+        document.getElementById('drumOrderForm')?.addEventListener('submit', (e) => this.handleDrumOrderSubmit(e));
+        document.getElementById('storeForm')?.addEventListener('submit', (e) => this.handleStoreSubmit(e));
+        document.getElementById('paymentForm')?.addEventListener('submit', (e) => this.handlePaymentSubmit(e));
+        document.getElementById('staffForm')?.addEventListener('submit', (e) => this.handleStaffSubmit(e));
+    }
+
+    setupModalEscape() {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+            }
+        });
+
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.classList.remove('active');
+                }
+            });
+        });
+    }
+
+    renderAll() {
+        this.renderDashboard();
+        this.renderProducts();
+        this.renderPurchases();
+        this.renderSales();
+        this.renderDrums();
+        this.renderStores();
+        this.renderDailyReport();
+        this.renderStaff();
+        this.renderAnalytics();
+    }
+
+    renderCurrentSection() {
+        if (this.currentSection === 'dashboard') this.renderDashboard();
+        else if (this.currentSection === 'products') this.renderProducts();
+        else if (this.currentSection === 'purchases') this.renderPurchases();
+        else if (this.currentSection === 'sales') this.renderSales();
+        else if (this.currentSection === 'drums') this.renderDrums();
+        else if (this.currentSection === 'stores') this.renderStores();
+        else if (this.currentSection === 'daily') this.renderDailyReport();
+        else if (this.currentSection === 'staff') this.renderStaff();
+        else if (this.currentSection === 'analytics') this.renderAnalytics();
+    }
+
+    // ==========================================
+    // RENDER: DASHBOARD
+    // ==========================================
+    renderDashboard() {
+        const today = this.getTodayStr();
+        const sales = this.store.getSales();
+        const purchases = this.store.getPurchases();
+        const drums = this.store.getDrumOrders();
+        const stores = this.store.getStores();
+
+        const todaySales = sales.filter(s => s.date === today);
+        const todaySalesTotal = todaySales.reduce((sum, s) => sum + (s.total || 0), 0);
+        const todayProfitTotal = todaySales.reduce((sum, s) => sum + (s.profit || 0), 0);
+
+        const todayPurchases = purchases.filter(p => p.date === today);
+        const todayPurchasesTotal = todayPurchases.reduce((sum, p) => sum + (p.total || 0), 0);
+
+        const todayDrums = drums.filter(d => d.date === today);
+        const deliveredDrums = todayDrums.filter(d => d.status === 'Delivered').reduce((sum, d) => sum + (d.qty || 0), 0);
+        const totalDrumsOrdered = todayDrums.reduce((sum, d) => sum + (d.qty || 0), 0);
+
+        const totalStoreBalanceDue = stores.reduce((sum, s) => sum + Math.max(0, s.balanceDue || 0), 0);
+
+        let inWaterUnits = 0;
+        let inDrinksUnits = 0;
+        todayPurchases.forEach(pur => {
+            const prod = this.store.getProduct(pur.productId);
+            if (prod && prod.category === 'water') inWaterUnits += pur.qty;
+            else if (prod && prod.category === 'drinks') inDrinksUnits += pur.qty;
+        });
+
+        const outSoldUnits = todaySales.reduce((sum, s) => sum + (s.qty || 0), 0);
+
+        const setSafe = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        };
+
+        setSafe('kpi-today-sales', '₹' + todaySalesTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+        setSafe('kpi-today-sales-count', todaySales.length + ' store deliveries today');
+        setSafe('kpi-today-purchases', '₹' + todayPurchasesTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+        setSafe('kpi-today-purchases-count', todayPurchases.length + ' factory orders');
+        setSafe('kpi-today-profit', '₹' + todayProfitTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+        const margin = todaySalesTotal > 0 ? ((todayProfitTotal / todaySalesTotal) * 100).toFixed(1) : '0';
+        setSafe('kpi-today-margin', margin + '%');
+        setSafe('kpi-drum-status', deliveredDrums + ' / ' + totalDrumsOrdered);
+        setSafe('kpi-drum-sub', deliveredDrums + ' delivered out of ' + totalDrumsOrdered + ' ordered');
+        setSafe('kpi-store-due', '₹' + totalStoreBalanceDue.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+
+        setSafe('flow-in-water', inWaterUnits + ' Bottles');
+        setSafe('flow-in-drinks', inDrinksUnits + ' Bottles');
+        setSafe('flow-in-val', '₹' + todayPurchasesTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+        setSafe('flow-in-count', todayPurchases.length + ' Batches');
+
+        setSafe('flow-out-units', outSoldUnits + ' Bottles/Units');
+        setSafe('flow-out-drums', deliveredDrums + ' Drums');
+        setSafe('flow-out-val', '₹' + todaySalesTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+        setSafe('flow-out-profit', '₹' + todayProfitTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+
+        const recentTable = document.getElementById('dashboardRecentSales');
+        if (recentTable) {
+            recentTable.innerHTML = '';
+            const top5 = sales.slice(0, 5);
+            if (top5.length === 0) {
+                recentTable.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 24px; color: var(--text-muted);">No sales recorded yet. Click "+ New Sale" to record your first delivery!</td></tr>';
+            } else {
+                top5.forEach(s => {
+                    const statusBadge = s.status === 'Paid' 
+                        ? '<span class="badge badge-success">✓ Fully Paid</span>' 
+                        : (s.status === 'Partial' ? '<span class="badge badge-warning">Partial</span>' : '<span class="badge badge-danger">Credit / Due</span>');
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${s.date}</td>
+                        <td><strong>${s.storeName}</strong></td>
+                        <td>${s.productName}</td>
+                        <td><span class="badge badge-info">${s.qty} units</span></td>
+                        <td>₹${(s.rate || 0).toFixed(2)}</td>
+                        <td><strong>₹${(s.total || 0).toFixed(2)}</strong></td>
+                        <td style="color: var(--text-muted);">₹${((s.buyPrice || 0) * s.qty).toFixed(2)}</td>
+                        <td style="color: #10b981; font-weight: 700;">+₹${(s.profit || 0).toFixed(2)}</td>
+                        <td>${statusBadge}</td>
+                    `;
+                    recentTable.appendChild(row);
+                });
+            }
+        }
+    }
+
+    // ==========================================
+    // RENDER: PRODUCTS
+    // ==========================================
+    filterProducts(cat) {
+        this.productCategoryFilter = cat;
+        document.querySelectorAll('#productTabs .tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.cat === cat);
+        });
+        this.renderProducts();
+    }
+
+    renderProducts() {
+        const grid = document.getElementById('productGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        const search = (document.getElementById('productSearch')?.value || '').toLowerCase();
+        let products = this.store.getProducts();
+
+        if (this.productCategoryFilter !== 'all') {
+            products = products.filter(p => p.category === this.productCategoryFilter);
+        }
+
+        if (search) {
+            products = products.filter(p => 
+                p.name.toLowerCase().includes(search) || 
+                (p.size && p.size.toLowerCase().includes(search))
+            );
+        }
+
+        if (products.length === 0) {
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">No products in this category. Click "+ Add New Product" to create one.</div>';
+            return;
+        }
+
+        products.forEach(p => {
+            const profitPerUnit = (p.sellPrice || 0) - (p.buyPrice || 0);
+            const marginPct = p.sellPrice > 0 ? ((profitPerUnit / p.sellPrice) * 100).toFixed(1) : 0;
+            const stockStatus = (p.stock || 0) > 50 
+                ? '<span class="badge badge-success">In Stock (' + p.stock + ')</span>' 
+                : ((p.stock || 0) > 0 ? '<span class="badge badge-warning">Low Stock (' + p.stock + ')</span>' : '<span class="badge badge-secondary">0 Stock</span>');
+
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.innerHTML = `
+                <div class="product-header">
+                    <div>
+                        <div class="product-title">${p.name}</div>
+                        <div class="product-category">${p.size || ''} • ${p.category.toUpperCase()} • (${p.unitsPerBox || 24} Units/Box)</div>
+                    </div>
+                    <div>${stockStatus}</div>
+                </div>
+
+                <div class="product-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Factory Cost</span>
+                        <span class="stat-val">₹${(p.buyPrice || 0).toFixed(2)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Selling Rate</span>
+                        <span class="stat-val">₹${(p.sellPrice || 0).toFixed(2)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Profit / Unit</span>
+                        <span class="stat-val stat-profit">₹${profitPerUnit.toFixed(2)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Margin %</span>
+                        <span class="stat-val stat-profit">${marginPct}%</span>
+                    </div>
+                </div>
+
+                <div class="stock-indicator">
+                    <span>Stock: <strong>${p.stock || 0} Units</strong> (~${((p.stock || 0)/(p.unitsPerBox || 24)).toFixed(1)} Boxes)</span>
+                    <div style="display: flex; gap: 6px;">
+                        <button class="btn btn-secondary btn-sm" onclick="app.editProduct('${p.id}')">Edit</button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="app.deleteProduct('${p.id}')">Delete</button>
+                    </div>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    // ==========================================
+    // RENDER: PURCHASES (FACTORY INFLOW)
+    // ==========================================
+    renderPurchases() {
+        const tbody = document.getElementById('purchasesTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        const search = (document.getElementById('purchaseSearch')?.value || '').toLowerCase();
+        const dateFilter = document.getElementById('purchaseDateFilter')?.value;
+
+        let purchases = this.store.getPurchases();
+        if (dateFilter) {
+            purchases = purchases.filter(p => p.date === dateFilter);
+        }
+        if (search) {
+            purchases = purchases.filter(p => 
+                (p.factory && p.factory.toLowerCase().includes(search)) ||
+                (p.productName && p.productName.toLowerCase().includes(search)) ||
+                (p.notes && p.notes.toLowerCase().includes(search))
+            );
+        }
+
+        if (purchases.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 24px; color: var(--text-muted);">No factory purchases recorded yet. Click "+ Record Factory Purchase" to add arriving stock.</td></tr>';
+            return;
+        }
+
+        purchases.forEach(pur => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${pur.date}</td>
+                <td><strong>${pur.factory}</strong></td>
+                <td>${pur.productName}</td>
+                <td><span class="badge badge-info">+${pur.qty} Units</span></td>
+                <td>₹${(pur.rate || 0).toFixed(2)}</td>
+                <td><strong>₹${(pur.total || 0).toFixed(2)}</strong></td>
+                <td style="color: var(--text-muted); font-size: 0.8rem;">${pur.notes || '-'}</td>
+                <td>
+                    <button class="btn btn-outline-danger btn-sm" onclick="app.deletePurchase('${pur.id}')">Delete</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // ==========================================
+    // RENDER: SALES
+    // ==========================================
+    renderSales() {
+        const tbody = document.getElementById('salesTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        const search = (document.getElementById('saleSearch')?.value || '').toLowerCase();
+        const dateFilter = document.getElementById('saleDateFilter')?.value;
+
+        let sales = this.store.getSales();
+        if (dateFilter) {
+            sales = sales.filter(s => s.date === dateFilter);
+        }
+        if (search) {
+            sales = sales.filter(s => 
+                (s.storeName && s.storeName.toLowerCase().includes(search)) ||
+                (s.productName && s.productName.toLowerCase().includes(search))
+            );
+        }
+
+        if (sales.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 24px; color: var(--text-muted);">No store sales recorded yet. Click "+ Record New Sale" to log a store delivery!</td></tr>';
+            return;
+        }
+
+        sales.forEach(s => {
+            const statusBadge = s.status === 'Paid' 
+                ? '<span class="badge badge-success">✓ Paid</span>' 
+                : (s.status === 'Partial' ? '<span class="badge badge-warning">Partial</span>' : '<span class="badge badge-danger">Due / Credit</span>');
+            
+            const driverInfo = s.driverName ? `<div>🚚 ${s.driverName}</div>` : '';
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${s.date}</td>
+                <td><strong>${s.storeName}</strong>${driverInfo}</td>
+                <td>${s.productName}</td>
+                <td><span class="badge badge-info">${s.qty} units</span></td>
+                <td>₹${(s.rate || 0).toFixed(2)}</td>
+                <td><strong>₹${(s.total || 0).toFixed(2)}</strong></td>
+                <td style="color: var(--text-muted);">₹${((s.buyPrice || 0) * s.qty).toFixed(2)}</td>
+                <td style="color: #10b981; font-weight: 700;">+₹${(s.profit || 0).toFixed(2)}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    <button class="btn btn-outline-danger btn-sm" onclick="app.deleteSale('${s.id}')">Delete</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // ==========================================
+    // RENDER: 20L DRUMS
+    // ==========================================
+    filterDrums(status) {
+        this.drumStatusFilter = status;
+        document.querySelectorAll('#drumTabs .tab-btn').forEach(btn => {
+            btn.classList.toggle('active', (status === 'all' && btn.textContent === 'All Orders') || btn.textContent === status);
+        });
+        this.renderDrums();
+    }
+
+    renderDrums() {
+        const tbody = document.getElementById('drumsTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        const drums = this.store.getDrumOrders();
+        const today = this.getTodayStr();
+
+        const todayDrums = drums.filter(d => d.date === today);
+        const totalOrdered = todayDrums.reduce((sum, d) => sum + (d.qty || 0), 0);
+        const deliveredCount = todayDrums.filter(d => d.status === 'Delivered').reduce((sum, d) => sum + (d.qty || 0), 0);
+        const transitCount = todayDrums.filter(d => d.status === 'Out for Delivery').reduce((sum, d) => sum + (d.qty || 0), 0);
+        const pendingCount = todayDrums.filter(d => d.status === 'Pending').reduce((sum, d) => sum + (d.qty || 0), 0);
+        const emptiesHolding = drums.reduce((sum, d) => sum + ((d.qty || 0) - (d.emptiesReturned || 0)), 0);
+
+        const setSafe = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        };
+
+        setSafe('drumTotalOrders', totalOrdered + ' Drums');
+        setSafe('drumDeliveredCount', deliveredCount + ' Drums');
+        setSafe('drumInTransitCount', transitCount + ' Drums');
+        setSafe('drumPendingCount', pendingCount + ' Drums');
+        setSafe('drumEmptyHolding', Math.max(0, emptiesHolding) + ' Empties');
+
+        const search = (document.getElementById('drumSearch')?.value || '').toLowerCase();
+        let filtered = drums;
+        if (this.drumStatusFilter !== 'all') {
+            filtered = filtered.filter(d => d.status === this.drumStatusFilter);
+        }
+        if (search) {
+            filtered = filtered.filter(d => d.customer && d.customer.toLowerCase().includes(search));
+        }
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 24px; color: var(--text-muted);">No 20L drum orders recorded. Click "+ New 20L Drum Order" to dispatch.</td></tr>';
+            return;
+        }
+
+        filtered.forEach(d => {
+            const statusClass = d.status === 'Delivered' ? 'drum-delivered' : (d.status === 'Out for Delivery' ? 'drum-transit' : 'drum-pending');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${d.date}</td>
+                <td><strong>${d.customer}</strong></td>
+                <td><span class="badge badge-purple">${d.qty} Drums (20L)</span></td>
+                <td>₹${(d.rate || 0).toFixed(2)}</td>
+                <td><strong>₹${(d.total || 0).toFixed(2)}</strong></td>
+                <td>${d.emptiesReturned || 0} Collected</td>
+                <td><span class="drum-status-badge ${statusClass}">${d.status}</span></td>
+                <td>
+                    <select onchange="app.changeDrumStatus('${d.id}', this.value)" style="padding: 4px 8px; font-size: 0.8rem; width: auto;">
+                        <option value="Pending" ${d.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                        <option value="Out for Delivery" ${d.status === 'Out for Delivery' ? 'selected' : ''}>Out for Delivery</option>
+                        <option value="Delivered" ${d.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
+                    </select>
+                </td>
+                <td>
+                    <button class="btn btn-outline-danger btn-sm" onclick="app.deleteDrumOrder('${d.id}')">Delete</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    changeDrumStatus(id, newStatus) {
+        let empties = null;
+        if (newStatus === 'Delivered') {
+            const input = prompt('How many empty drums were collected back from this delivery?', '5');
+            if (input !== null) empties = parseInt(input) || 0;
+        }
+        this.store.updateDrumStatus(id, newStatus, empties);
+        this.showToast('Drum order status updated to ' + newStatus, 'info');
+        this.renderAll();
+    }
+
+    // ==========================================
+    // RENDER: STORES & KHATA LEDGER
+    // ==========================================
+    renderStores() {
+        const grid = document.getElementById('storesGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        const search = (document.getElementById('storeSearch')?.value || '').toLowerCase();
+        let stores = this.store.getStores();
+
+        if (search) {
+            stores = stores.filter(s => 
+                (s.name && s.name.toLowerCase().includes(search)) ||
+                (s.owner && s.owner.toLowerCase().includes(search)) ||
+                (s.phone && s.phone.toLowerCase().includes(search))
+            );
+        }
+
+        if (stores.length === 0) {
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">No stores registered yet. Click "+ Add New Store" to add your store clients!</div>';
+            return;
+        }
+
+        stores.forEach(s => {
+            const balanceDue = s.balanceDue || 0;
+            const balanceClass = balanceDue > 0 ? 'fin-due' : 'fin-clear';
+            const balanceText = balanceDue > 0 ? '₹' + balanceDue.toFixed(2) + ' Due (Left to Pay)' : 'All Paid / ₹0 Due ✓';
+
+            const card = document.createElement('div');
+            card.className = 'store-card';
+            card.innerHTML = `
+                <div class="store-header">
+                    <div>
+                        <div class="store-name">${s.name}</div>
+                        <div class="store-owner">👤 ${s.owner || 'N/A'} • 📞 ${s.phone || 'N/A'}</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">📍 ${s.address || 'No address'}</div>
+                    </div>
+                </div>
+
+                <div class="store-financials">
+                    <div class="fin-row">
+                        <span style="color: var(--text-muted);">Total Bought (Billing)</span>
+                        <span>₹${(s.totalBought || 0).toFixed(2)}</span>
+                    </div>
+                    <div class="fin-row">
+                        <span style="color: var(--text-muted);">Total Paid (Received)</span>
+                        <span style="color: #10b981; font-weight: 600;">₹${(s.totalPaid || 0).toFixed(2)}</span>
+                    </div>
+                    <div class="fin-row balance">
+                        <span>Balance Left:</span>
+                        <span class="${balanceClass}">${balanceText}</span>
+                    </div>
+                </div>
+
+                <div class="store-actions">
+                    <button class="btn btn-primary btn-sm" style="flex: 1;" onclick="app.openStatement('${s.id}')">📜 Statement / Khata</button>
+                    <button class="btn btn-success btn-sm" onclick="app.openPaymentModal('${s.id}')">+ Payment</button>
+                    <button class="btn btn-secondary btn-sm" onclick="app.editStore('${s.id}')">Edit</button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="app.deleteStore('${s.id}')">×</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    // ==========================================
+    // RENDER: DAILY REPORT
+    // ==========================================
+    setDailyReportToday() {
+        const today = this.getTodayStr();
+        const el = document.getElementById('dailyReportDate');
+        if (el) el.value = today;
+        this.renderDailyReport();
+    }
+
+    renderDailyReport() {
+        const dateInput = document.getElementById('dailyReportDate');
+        const selectedDate = dateInput ? dateInput.value || this.getTodayStr() : this.getTodayStr();
+
+        const purchases = this.store.getPurchases().filter(p => p.date === selectedDate);
+        const sales = this.store.getSales().filter(s => s.date === selectedDate);
+        const drumOrders = this.store.getDrumOrders().filter(d => d.date === selectedDate);
+        const payments = this.store.getPayments().filter(p => p.date === selectedDate);
+
+        const inflowCost = purchases.reduce((sum, p) => sum + (p.total || 0), 0);
+        const inflowUnits = purchases.reduce((sum, p) => sum + (p.qty || 0), 0);
+
+        const salesRevenue = sales.reduce((sum, s) => sum + (s.total || 0), 0);
+        const drumRevenue = drumOrders.filter(d => d.status === 'Delivered').reduce((sum, d) => sum + (d.total || 0), 0);
+        const totalOutflowRevenue = salesRevenue + drumRevenue;
+        const totalOutflowUnits = sales.reduce((sum, s) => sum + (s.qty || 0), 0) + drumOrders.reduce((sum, d) => sum + (d.qty || 0), 0);
+
+        let waterProfit = 0;
+        let drinksProfit = 0;
+        sales.forEach(s => {
+            const prod = this.store.getProduct(s.productId);
+            if (prod && prod.category === 'water') waterProfit += (s.profit || 0);
+            else if (prod && prod.category === 'drinks') drinksProfit += (s.profit || 0);
+            else waterProfit += (s.profit || 0);
+        });
+
+        const drumsDelivered = drumOrders.filter(d => d.status === 'Delivered').reduce((sum, d) => sum + (d.qty || 0), 0);
+        const drumProfit = drumsDelivered * 23.00;
+
+        const totalNetProfit = (waterProfit + drinksProfit + drumProfit);
+        const paymentsCollected = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+        const setSafe = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        };
+
+        setSafe('day-inflow-cost', '₹' + inflowCost.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+        setSafe('day-inflow-units', inflowUnits + ' items arrived from factories');
+        setSafe('day-outflow-revenue', '₹' + totalOutflowRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+        setSafe('day-outflow-units', totalOutflowUnits + ' units delivered to stores');
+        setSafe('day-net-profit', '₹' + totalNetProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+        const margin = totalOutflowRevenue > 0 ? ((totalNetProfit / totalOutflowRevenue) * 100).toFixed(1) : 0;
+        setSafe('day-profit-margin', 'Profit Margin: ' + margin + '%');
+        setSafe('day-payments-collected', '₹' + paymentsCollected.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+        setSafe('day-payments-count', payments.length + ' store settlements recorded');
+        setSafe('day-profit-water', '₹' + waterProfit.toFixed(2));
+        setSafe('day-profit-drinks', '₹' + drinksProfit.toFixed(2));
+        setSafe('day-profit-drums', '₹' + drumProfit.toFixed(2));
+        setSafe('day-profit-total', '₹' + totalNetProfit.toFixed(2));
+
+        const tbody = document.getElementById('dayTransactionsBody');
+        if (tbody) {
+            tbody.innerHTML = '';
+            const combined = [];
+
+            purchases.forEach(p => combined.push({
+                type: 'INFLOW (Purchase)',
+                entity: p.factory,
+                item: p.productName,
+                qty: '+' + p.qty,
+                rate: '₹' + (p.rate || 0).toFixed(2),
+                total: '-₹' + (p.total || 0).toFixed(2),
+                profit: '-',
+                badge: 'badge-info'
+            }));
+
+            sales.forEach(s => combined.push({
+                type: 'OUTFLOW (Sale)',
+                entity: s.storeName,
+                item: s.productName,
+                qty: '-' + s.qty,
+                rate: '₹' + (s.rate || 0).toFixed(2),
+                total: '+₹' + (s.total || 0).toFixed(2),
+                profit: '+₹' + (s.profit || 0).toFixed(2),
+                badge: 'badge-success'
+            }));
+
+            drumOrders.forEach(d => combined.push({
+                type: 'OUTFLOW (20L Drum)',
+                entity: d.customer,
+                item: '20L Water Drum (' + d.status + ')',
+                qty: '-' + d.qty,
+                rate: '₹' + (d.rate || 0).toFixed(2),
+                total: '+₹' + (d.total || 0).toFixed(2),
+                profit: d.status === 'Delivered' ? '+₹' + (d.qty * 23).toFixed(2) : '-',
+                badge: 'badge-purple'
+            }));
+
+            if (combined.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 24px; color: var(--text-muted);">No activity recorded for this date.</td></tr>';
+            } else {
+                combined.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><span class="badge ${row.badge}">${row.type}</span></td>
+                        <td><strong>${row.entity}</strong></td>
+                        <td>${row.item}</td>
+                        <td>${row.qty}</td>
+                        <td>${row.rate}</td>
+                        <td><strong>${row.total}</strong></td>
+                        <td style="color: #10b981; font-weight: 700;">${row.profit}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+    }
+
+    // ==========================================
+    // RENDER: DRIVERS, STAFF & MONTHLY SALARIES
+    // ==========================================
+    populateStaffMonthDropdown(selectId, currentSelected) {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        select.innerHTML = '';
+
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+
+        for (let i = -6; i <= 6; i++) {
+            const d = new Date(currentYear, currentMonth + i, 1);
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const val = `${yyyy}-${mm}`;
+            const label = d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+            
+            const opt = document.createElement('option');
+            opt.value = val;
+            opt.textContent = label + (i === 0 ? ' (Current)' : '');
+            if (val === currentSelected) opt.selected = true;
+            select.appendChild(opt);
+        }
+    }
+
+    onStaffSectionMonthChange() {
+        const select = document.getElementById('staffSectionMonthSelect');
+        if (select) {
+            this.selectedStaffMonth = select.value;
+            this.renderStaff();
+        }
+    }
+
+    prevStaffMonth() {
+        const [y, m] = this.selectedStaffMonth.split('-').map(Number);
+        const d = new Date(y, m - 2, 1);
+        this.selectedStaffMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        this.renderStaff();
+    }
+
+    nextStaffMonth() {
+        const [y, m] = this.selectedStaffMonth.split('-').map(Number);
+        const d = new Date(y, m, 1);
+        this.selectedStaffMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        this.renderStaff();
+    }
+
+    filterStaff(role) {
+        this.staffRoleFilter = role;
+        document.querySelectorAll('#staffTabs .tab-btn').forEach(btn => {
+            btn.classList.toggle('active', (role === 'all' && btn.textContent.includes('All Staff')) || btn.textContent.startsWith(role));
+        });
+        this.renderStaff();
+    }
+
+    renderStaff() {
+        const month = this.selectedStaffMonth || this.getTodayStr().substring(0, 7);
+        this.populateStaffMonthDropdown('staffSectionMonthSelect', month);
+
+        const datalist = document.getElementById('staffList');
+        if (datalist) {
+            datalist.innerHTML = '';
+            this.store.getStaffList().forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.name;
+                datalist.appendChild(opt);
+            });
+        }
+
+        let staffList = this.store.getStaffList();
+        if (this.staffRoleFilter && this.staffRoleFilter !== 'all') {
+            staffList = staffList.filter(s => s.role === this.staffRoleFilter);
+        }
+
+        let totalMonthFixed = 0;
+        let totalMonthCommissions = 0;
+        let totalMonthAdvances = 0;
+        let totalMonthNet = 0;
+
+        const tableBody = document.getElementById('staffSalaryTableBody');
+        if (tableBody) tableBody.innerHTML = '';
+
+        const grid = document.getElementById('staffGrid');
+        if (grid) grid.innerHTML = '';
+
+        if (staffList.length === 0) {
+            if (tableBody) tableBody.innerHTML = '<tr><td colspan="12" style="text-align:center; padding: 24px; color: var(--text-muted);">No staff registered in this filter. Click "+ Add New Staff" to add driver or helper.</td></tr>';
+            if (grid) grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">No staff registered. Click "+ Add New Staff" to get started.</div>';
+        }
+
+        staffList.forEach(s => {
+            const roleBadge = s.role === 'Driver' ? 'badge-primary' : 'badge-info';
+            const ratePerBox = s.role === 'Driver' ? 2 : 1;
+
+            const deliveries = this.store.getStaffDeliveries(s.id, month);
+            const totalBoxesDelivered = deliveries.reduce((sum, d) => sum + (d.boxCount || 0), 0);
+            const totalCommissionEarned = deliveries.reduce((sum, d) => sum + (d.totalCommission || 0), 0);
+
+            const monthSalary = this.store.getStaffMonthlySalary(s.id, month);
+            const fixedSalary = monthSalary.fixedSalary !== undefined ? monthSalary.fixedSalary : (s.baseFixedSalary || 0);
+            const advSalary = monthSalary.advanceSalary || 0;
+            const extraIncome = monthSalary.extraIncome || 0;
+            const paidAmount = monthSalary.paidAmount || 0;
+
+            const netPayable = (fixedSalary + totalCommissionEarned + extraIncome) - advSalary;
+            const balanceLeft = Math.max(0, netPayable - paidAmount);
+
+            let statusBadge = '<span class="badge badge-warning">Pending</span>';
+            if (paidAmount >= netPayable && netPayable > 0) {
+                statusBadge = '<span class="badge badge-success">✓ Fully Paid</span>';
+            } else if (paidAmount > 0) {
+                statusBadge = '<span class="badge badge-info">Partial (₹' + paidAmount + ')</span>';
+            }
+
+            totalMonthFixed += fixedSalary;
+            totalMonthCommissions += totalCommissionEarned;
+            totalMonthAdvances += advSalary;
+            totalMonthNet += netPayable;
+
+            if (tableBody) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${s.name}</strong></td>
+                    <td><span class="badge ${roleBadge}">${s.role}</span></td>
+                    <td style="color: var(--text-muted);">₹${(s.baseFixedSalary || 0).toFixed(2)}</td>
+                    <td><strong>₹${fixedSalary.toFixed(2)}</strong></td>
+                    <td style="color: #10b981; font-weight: 700;">+₹${totalCommissionEarned.toFixed(2)} <span style="font-size: 0.75rem; color: var(--text-muted);">(${totalBoxesDelivered} boxes)</span></td>
+                    <td style="color: #38bdf8;">+₹${extraIncome.toFixed(2)}</td>
+                    <td style="color: #f87171;">-₹${advSalary.toFixed(2)}</td>
+                    <td style="color: #10b981; font-weight: 800; font-size: 1.05rem;">₹${netPayable.toFixed(2)}</td>
+                    <td style="color: #38bdf8;">₹${paidAmount.toFixed(2)}</td>
+                    <td style="color: ${balanceLeft > 0 ? '#ef4444' : '#10b981'}; font-weight: 700;">₹${balanceLeft.toFixed(2)}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <div style="display: flex; gap: 6px;">
+                            <button class="btn btn-primary btn-sm" onclick="app.openStaffLedger('${s.id}', '${month}')" title="View/Edit full month salary & delivery trips">📜 Ledger & Salary</button>
+                            <button class="btn btn-secondary btn-sm" onclick="app.editStaff('${s.id}')" title="Edit Staff Info">✏️</button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="app.deleteStaff('${s.id}')" title="Delete Staff">🗑️</button>
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            }
+
+            if (grid) {
+                const card = document.createElement('div');
+                card.className = 'store-card';
+                card.innerHTML = `
+                    <div class="store-header">
+                        <div>
+                            <div class="store-name">${s.name}</div>
+                            <div class="store-owner"><span class="badge ${roleBadge}">${s.role}</span> • 📞 ${s.phone || 'No phone'}</div>
+                        </div>
+                        <div>${statusBadge}</div>
+                    </div>
+                    <div class="store-financials">
+                        <div class="fin-row">
+                            <span style="color: var(--text-muted);">Month Fixed Salary:</span>
+                            <span>₹${fixedSalary.toFixed(2)}</span>
+                        </div>
+                        <div class="fin-row">
+                            <span style="color: var(--text-muted);">Earned Commission (${ratePerBox}₹/box):</span>
+                            <span style="color: #10b981; font-weight: 600;">+₹${totalCommissionEarned.toFixed(2)} (${totalBoxesDelivered} boxes)</span>
+                        </div>
+                        <div class="fin-row">
+                            <span style="color: var(--text-muted);">Extra / Advance (+/-):</span>
+                            <span>+₹${extraIncome.toFixed(2)} / -₹${advSalary.toFixed(2)}</span>
+                        </div>
+                        <div class="fin-row balance">
+                            <span>Net Payable Month:</span>
+                            <span style="color: #10b981; font-size: 1.1rem;">₹${netPayable.toFixed(2)}</span>
+                        </div>
+                        <div class="fin-row" style="font-size: 0.8rem;">
+                            <span style="color: var(--text-muted);">Paid / Balance Left:</span>
+                            <span>₹${paidAmount.toFixed(2)} / <strong style="color: ${balanceLeft > 0 ? '#ef4444' : '#10b981'}">₹${balanceLeft.toFixed(2)}</strong></span>
+                        </div>
+                    </div>
+                    <div class="store-actions">
+                        <button class="btn btn-primary btn-sm" style="flex: 1;" onclick="app.openStaffLedger('${s.id}', '${month}')">📜 View Ledger & Salary</button>
+                        <button class="btn btn-secondary btn-sm" onclick="app.editStaff('${s.id}')">Edit</button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="app.deleteStaff('${s.id}')">×</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            }
+        });
+
+        const setSafe = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        };
+
+        setSafe('staff-kpi-count', staffList.length + ' Staff');
+        setSafe('staff-kpi-fixed', '₹' + totalMonthFixed.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+        setSafe('staff-kpi-comm', '₹' + totalMonthCommissions.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+        setSafe('staff-kpi-adv', '₹' + totalMonthAdvances.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+        setSafe('staff-kpi-net', '₹' + totalMonthNet.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+    }
+
+    // Staff Add / Edit
+    openStaffModal(staff = null) {
+        document.getElementById('staffForm')?.reset();
+        if (staff) {
+            document.getElementById('staffModalTitle').textContent = 'Edit Staff Details';
+            document.getElementById('staffId').value = staff.id;
+            document.getElementById('staffName').value = staff.name;
+            document.getElementById('staffRole').value = staff.role;
+            document.getElementById('staffFixedSalary').value = staff.baseFixedSalary || 0;
+        } else {
+            document.getElementById('staffModalTitle').textContent = 'Add New Staff (Driver / Helper)';
+            document.getElementById('staffId').value = '';
+            document.getElementById('staffFixedSalary').value = 10000;
+        }
+        this.openModal('staffModal');
+    }
+
+    editStaff(id) {
+        const s = this.store.getStaff(id);
+        if (s) this.openStaffModal(s);
+    }
+
+    deleteStaff(id) {
+        const s = this.store.getStaff(id);
+        if (!s) return;
+        if (confirm(`Are you sure you want to delete ${s.name} (${s.role})? All delivery logs and salary records will be deleted.`)) {
+            this.store.deleteStaff(id);
+            this.showToast('Staff removed', 'info');
+            this.renderAll();
+        }
+    }
+
+    handleStaffSubmit(e) {
+        e.preventDefault();
+        const id = document.getElementById('staffId').value;
+        const data = {
+            name: document.getElementById('staffName').value.trim(),
+            role: document.getElementById('staffRole').value,
+            baseFixedSalary: parseFloat(document.getElementById('staffFixedSalary').value) || 0
+        };
+
+        if (id) {
+            this.store.updateStaff(id, data);
+            this.showToast('Staff updated successfully', 'success');
+        } else {
+            this.store.addStaff(data);
+            this.showToast(`New ${data.role} ${data.name} added!`, 'success');
+        }
+        this.closeModal('staffModal');
+        this.renderAll();
+    }
+
+    // ==========================================
+    // STAFF LEDGER & MONTHLY SALARY MODAL
+    // ==========================================
+    openStaffLedger(id, month = null) {
+        const staff = this.store.getStaff(id);
+        if (!staff) return;
+
+        this.selectedLedgerStaffId = id;
+        this.selectedLedgerMonth = month || this.selectedStaffMonth || this.getTodayStr().substring(0, 7);
+
+        document.getElementById('staffLedgerTitle').textContent = `🚚 ${staff.name} (${staff.role}) — Salary Structure & Ledger`;
+        document.getElementById('ledgerStaffId').value = staff.id;
+
+        const roleBadge = document.getElementById('ledgerRoleBadge');
+        if (roleBadge) {
+            roleBadge.innerHTML = `<span class="badge ${staff.role === 'Driver' ? 'badge-primary' : 'badge-info'}" style="font-size: 0.85rem;">${staff.role} (Commission: ₹${staff.role === 'Driver' ? '2' : '1'} / Box)</span>`;
+        }
+
+        this.populateStaffMonthDropdown('ledgerMonthSelect', this.selectedLedgerMonth);
+        this.loadLedgerMonthData();
+        this.openModal('staffLedgerModal');
+    }
+
+    onLedgerMonthChange() {
+        const select = document.getElementById('ledgerMonthSelect');
+        if (select) {
+            this.selectedLedgerMonth = select.value;
+            this.loadLedgerMonthData();
+        }
+    }
+
+    loadLedgerMonthData() {
+        const staffId = this.selectedLedgerStaffId;
+        const month = this.selectedLedgerMonth;
+        const staff = this.store.getStaff(staffId);
+        if (!staff) return;
+
+        const monthSalary = this.store.getStaffMonthlySalary(staffId, month);
+        const deliveries = this.store.getStaffDeliveries(staffId, month);
+
+        const totalBoxes = deliveries.reduce((sum, d) => sum + (d.boxCount || 0), 0);
+        const totalCommission = deliveries.reduce((sum, d) => sum + (d.totalCommission || 0), 0);
+
+        document.getElementById('ledgerFixedSalaryInput').value = monthSalary.fixedSalary !== undefined ? monthSalary.fixedSalary : (staff.baseFixedSalary || 0);
+        document.getElementById('ledgerCommission').textContent = '₹' + totalCommission.toFixed(2);
+        document.getElementById('ledgerCommissionBoxes').textContent = `${totalBoxes} boxes delivered in ${month}`;
+        document.getElementById('ledgerAdvSalary').value = monthSalary.advanceSalary || 0;
+        document.getElementById('ledgerExtraIncome').value = monthSalary.extraIncome || 0;
+
+        document.getElementById('ledgerPaidAmount').value = monthSalary.paidAmount || '';
+        document.getElementById('ledgerPaidDate').value = monthSalary.paidDate || this.getTodayStr();
+        document.getElementById('ledgerPaymentMode').value = monthSalary.paymentMode || 'Cash';
+        document.getElementById('ledgerPaymentNote').value = monthSalary.notes || '';
+
+        this.calcStaffLedgerTotals();
+
+        const tbody = document.getElementById('staffLedgerBody');
+        tbody.innerHTML = '';
+        if (deliveries.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 16px; color: var(--text-muted);">No delivery trips recorded in this month. Recorded deliveries from Store Sales will show here automatically.</td></tr>';
+        } else {
+            deliveries.forEach(d => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${d.date}</td>
+                    <td><strong>${d.storeName || 'Manual Entry'}</strong></td>
+                    <td><span class="badge badge-info">${d.boxCount} Boxes</span></td>
+                    <td>₹${(d.ratePerBox || (staff.role === 'Driver' ? 2 : 1)).toFixed(2)}</td>
+                    <td style="color:#10b981; font-weight:bold;">+₹${(d.totalCommission || 0).toFixed(2)}</td>
+                    <td><span class="badge badge-secondary" style="font-size: 0.72rem;">${d.source || 'Sale Delivery'}</span></td>
+                    <td>
+                        <button class="btn btn-outline-danger btn-sm" onclick="app.deleteStaffDelivery('${d.id}')" title="Delete Trip">×</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        this.renderStaffMonthHistory(staffId);
+    }
+
+    renderStaffMonthHistory(staffId) {
+        const tbody = document.getElementById('staffMonthHistoryBody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        const staff = this.store.getStaff(staffId);
+        if (!staff) return;
+
+        const monthsSet = new Set();
+        (this.store.data.staffDeliveries || []).filter(d => d.staffId === staffId).forEach(d => {
+            if (d.month) monthsSet.add(d.month);
+            else if (d.date) monthsSet.add(d.date.substring(0, 7));
+        });
+        (this.store.data.staffMonthlySalaries || []).filter(m => m.staffId === staffId).forEach(m => {
+            if (m.month) monthsSet.add(m.month);
+        });
+
+        monthsSet.add(this.getTodayStr().substring(0, 7));
+        if (this.selectedLedgerMonth) monthsSet.add(this.selectedLedgerMonth);
+
+        const sortedMonths = Array.from(monthsSet).sort().reverse();
+
+        sortedMonths.forEach(m => {
+            const mSalary = this.store.getStaffMonthlySalary(staffId, m);
+            const mDeliveries = this.store.getStaffDeliveries(staffId, m);
+
+            const mBoxes = mDeliveries.reduce((sum, d) => sum + (d.boxCount || 0), 0);
+            const mCommission = mDeliveries.reduce((sum, d) => sum + (d.totalCommission || 0), 0);
+
+            const fixed = mSalary.fixedSalary !== undefined ? mSalary.fixedSalary : (staff.baseFixedSalary || 0);
+            const adv = mSalary.advanceSalary || 0;
+            const extra = mSalary.extraIncome || 0;
+            const paid = mSalary.paidAmount || 0;
+
+            const net = (fixed + mCommission + extra) - adv;
+            const bal = Math.max(0, net - paid);
+
+            let status = '<span class="badge badge-warning">Pending</span>';
+            if (paid >= net && net > 0) status = '<span class="badge badge-success">Paid ✓</span>';
+            else if (paid > 0) status = '<span class="badge badge-info">Partial</span>';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${m}</strong> ${m === this.selectedLedgerMonth ? '<span class="badge badge-primary" style="font-size:0.65rem;">Active</span>' : ''}</td>
+                <td>₹${fixed.toFixed(2)}</td>
+                <td style="color:#10b981;">₹${mCommission.toFixed(2)} (${mBoxes} boxes)</td>
+                <td style="color:#38bdf8;">₹${extra.toFixed(2)}</td>
+                <td style="color:#f87171;">₹${adv.toFixed(2)}</td>
+                <td style="color:#10b981; font-weight:700;">₹${net.toFixed(2)}</td>
+                <td>₹${paid.toFixed(2)}</td>
+                <td style="color:${bal > 0 ? '#ef4444' : '#10b981'};">₹${bal.toFixed(2)}</td>
+                <td>${status}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    calcStaffLedgerTotals() {
+        const staffId = this.selectedLedgerStaffId;
+        const month = this.selectedLedgerMonth;
+        const staff = this.store.getStaff(staffId);
+        if (!staff) return;
+
+        const deliveries = this.store.getStaffDeliveries(staffId, month);
+        const totalCommission = deliveries.reduce((sum, d) => sum + (d.totalCommission || 0), 0);
+
+        const fixed = parseFloat(document.getElementById('ledgerFixedSalaryInput')?.value) || 0;
+        const adv = parseFloat(document.getElementById('ledgerAdvSalary')?.value) || 0;
+        const extra = parseFloat(document.getElementById('ledgerExtraIncome')?.value) || 0;
+        const paid = parseFloat(document.getElementById('ledgerPaidAmount')?.value) || 0;
+
+        const net = (fixed + totalCommission + extra) - adv;
+        const bal = Math.max(0, net - paid);
+
+        const netEl = document.getElementById('ledgerNetPayable');
+        if (netEl) netEl.textContent = '₹' + net.toFixed(2);
+
+        const balEl = document.getElementById('ledgerMonthBalanceLeft');
+        if (balEl) {
+            balEl.textContent = '₹' + bal.toFixed(2);
+            balEl.style.color = bal > 0 ? '#ef4444' : '#10b981';
+        }
+
+        const statusBadge = document.getElementById('ledgerMonthStatusBadge');
+        if (statusBadge) {
+            if (paid >= net && net > 0) {
+                statusBadge.className = 'badge badge-success';
+                statusBadge.textContent = 'Fully Paid ✓';
+            } else if (paid > 0) {
+                statusBadge.className = 'badge badge-info';
+                statusBadge.textContent = 'Partial Paid';
+            } else {
+                statusBadge.className = 'badge badge-warning';
+                statusBadge.textContent = 'Pending';
+            }
+        }
+    }
+
+    saveStaffMonthlySalary() {
+        const staffId = this.selectedLedgerStaffId;
+        const month = this.selectedLedgerMonth;
+        const staff = this.store.getStaff(staffId);
+        if (!staff) return;
+
+        const fixed = parseFloat(document.getElementById('ledgerFixedSalaryInput')?.value) || 0;
+        const adv = parseFloat(document.getElementById('ledgerAdvSalary')?.value) || 0;
+        const extra = parseFloat(document.getElementById('ledgerExtraIncome')?.value) || 0;
+        const paid = parseFloat(document.getElementById('ledgerPaidAmount')?.value) || 0;
+        const paidDate = document.getElementById('ledgerPaidDate')?.value;
+        const paymentMode = document.getElementById('ledgerPaymentMode')?.value;
+        const notes = document.getElementById('ledgerPaymentNote')?.value.trim();
+
+        const deliveries = this.store.getStaffDeliveries(staffId, month);
+        const totalCommission = deliveries.reduce((sum, d) => sum + (d.totalCommission || 0), 0);
+        const net = (fixed + totalCommission + extra) - adv;
+
+        let status = 'Pending';
+        if (paid >= net && net > 0) status = 'Paid';
+        else if (paid > 0) status = 'Partial';
+
+        this.store.saveStaffMonthlySalary({
+            staffId: staffId,
+            month: month,
+            fixedSalary: fixed,
+            advanceSalary: adv,
+            extraIncome: extra,
+            paidAmount: paid,
+            paidDate: paidDate,
+            paymentMode: paymentMode,
+            notes: notes,
+            status: status
+        });
+
+        this.showToast(`Saved monthly salary for ${staff.name} (${month})!`, 'success');
+        this.renderStaff();
+        this.renderStaffMonthHistory(staffId);
+    }
+
+    addManualCommission() {
+        const staffId = this.selectedLedgerStaffId;
+        const staff = this.store.getStaff(staffId);
+        if (!staff) return;
+
+        const defaultRate = staff.role === 'Driver' ? 2 : 1;
+        const boxesStr = prompt(`Enter number of boxes delivered by ${staff.name} (${staff.role}):`, "20");
+        if (boxesStr === null) return;
+        const boxes = parseInt(boxesStr);
+        if (isNaN(boxes) || boxes <= 0) {
+            alert('Please enter a valid box count.');
+            return;
+        }
+
+        const rateStr = prompt(`Enter per-box commission rate (₹):`, String(defaultRate));
+        if (rateStr === null) return;
+        const rate = parseFloat(rateStr) || defaultRate;
+
+        const storeName = prompt(`Enter Store Name / Customer (optional):`, "Manual Delivery Trip") || "Manual Delivery Trip";
+        const date = prompt(`Enter Delivery Date (YYYY-MM-DD):`, this.getTodayStr()) || this.getTodayStr();
+        const month = date.substring(0, 7);
+
+        this.store.addStaffDelivery({
+            staffId: staff.id,
+            staffName: staff.name,
+            role: staff.role,
+            date: date,
+            month: month,
+            storeName: storeName,
+            boxCount: boxes,
+            ratePerBox: rate,
+            totalCommission: boxes * rate,
+            source: 'Manual Entry'
+        });
+
+        this.showToast(`Delivery log added: ${boxes} boxes @ ₹${rate}/box (+₹${boxes * rate})`, 'success');
+        this.loadLedgerMonthData();
+        this.renderStaff();
+    }
+
+    deleteStaffDelivery(id) {
+        if (confirm('Delete this delivery trip record?')) {
+            this.store.deleteStaffDelivery(id);
+            this.showToast('Delivery trip deleted', 'info');
+            this.loadLedgerMonthData();
+            this.renderStaff();
+        }
+    }
+
+    // ==========================================
+    // MODAL HANDLERS & HELPERS
+    // ==========================================
+    openModal(id) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.add('active');
+            el.style.display = 'flex';
+        }
+    }
+
+    closeModal(id) {
+        if (id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.remove('active');
+                el.style.display = 'none';
+            }
+        } else {
+            document.querySelectorAll('.modal-overlay.active').forEach(m => {
+                m.classList.remove('active');
+                m.style.display = 'none';
+            });
+        }
+    }
+
+    showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = 'toast ' + type;
+        const icon = type === 'success' ? '✓' : (type === 'error' ? '⚠️' : 'ℹ️');
+        toast.innerHTML = '<span>' + icon + '</span><span>' + message + '</span>';
+        container.appendChild(toast);
+        setTimeout(() => {
+            if (toast && toast.remove) toast.remove();
+        }, 3500);
+    }
+
+    populateProductSelect(selectId) {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        select.innerHTML = '<option value="">-- Select Product --</option>';
+        this.store.getProducts().forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = `${p.name} (${p.size || ''}) [${p.unitsPerBox || 24} / Box] — Stock: ${p.stock || 0}`;
+            select.appendChild(opt);
+        });
+    }
+
+    populateStoreSelect(selectId) {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        select.innerHTML = '<option value="">-- Select Store / Retailer --</option>';
+        this.store.getStores().forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = `${s.name} (Due: ₹${(s.balanceDue || 0).toFixed(2)})`;
+            select.appendChild(opt);
+        });
+    }
+
+    // ==========================================
+    // PRODUCT MODAL
+    // ==========================================
+    openProductModal(prod = null) {
+        document.getElementById('productForm')?.reset();
+        if (prod) {
+            document.getElementById('productModalTitle').textContent = 'Edit Product';
+            document.getElementById('productId').value = prod.id;
+            document.getElementById('productCategory').value = prod.category;
+            document.getElementById('productName').value = prod.name;
+            document.getElementById('productSize').value = prod.size || '';
+            document.getElementById('productUnitsPerBox').value = prod.unitsPerBox || 24;
+            document.getElementById('productStock').value = prod.stock || 0;
+            document.getElementById('productStockBoxes').value = ((prod.stock || 0) / (prod.unitsPerBox || 24)).toFixed(1);
+            document.getElementById('productBuyPrice').value = prod.buyPrice;
+            document.getElementById('productSellPrice').value = prod.sellPrice;
+        } else {
+            document.getElementById('productModalTitle').textContent = 'Add New Product';
+            document.getElementById('productId').value = '';
+            document.getElementById('productUnitsPerBox').value = 24;
+            document.getElementById('productStockBoxes').value = 10;
+            document.getElementById('productStock').value = 240;
+            document.getElementById('productBuyPrice').value = 5.50;
+            document.getElementById('productSellPrice').value = 10.00;
+        }
+        this.calcProductProfit();
+        this.openModal('productModal');
+    }
+
+    editProduct(id) {
+        const p = this.store.getProduct(id);
+        if (p) this.openProductModal(p);
+    }
+
+    deleteProduct(id) {
+        if (confirm('Are you sure you want to delete this product?')) {
+            this.store.deleteProduct(id);
+            this.showToast('Product deleted!', 'info');
+            this.renderAll();
+        }
+    }
+
+    onProductCategoryChange() {
+        const cat = document.getElementById('productCategory')?.value;
+        const sizeInput = document.getElementById('productSize');
+        if (cat === 'drums' && sizeInput) sizeInput.value = '20L Drum';
+    }
+
+    calcProductStockFromBoxes() {
+        const boxes = parseFloat(document.getElementById('productStockBoxes')?.value) || 0;
+        const unitsPerBox = parseInt(document.getElementById('productUnitsPerBox')?.value) || 24;
+        const total = Math.round(boxes * unitsPerBox);
+        const stockEl = document.getElementById('productStock');
+        if (stockEl) stockEl.value = total;
+        this.calcProductProfit();
+    }
+
+    calcProductStockFromUnits() {
+        const units = parseInt(document.getElementById('productStock')?.value) || 0;
+        const unitsPerBox = parseInt(document.getElementById('productUnitsPerBox')?.value) || 24;
+        const boxesEl = document.getElementById('productStockBoxes');
+        if (boxesEl) boxesEl.value = (units / unitsPerBox).toFixed(1);
+        this.calcProductProfit();
+    }
+
+    calcProductProfit() {
+        const buy = parseFloat(document.getElementById('productBuyPrice')?.value) || 0;
+        const sell = parseFloat(document.getElementById('productSellPrice')?.value) || 0;
+        const unitsPerBox = parseInt(document.getElementById('productUnitsPerBox')?.value) || 24;
+        const diff = sell - buy;
+        const boxDiff = diff * unitsPerBox;
+
+        const preview = document.getElementById('productProfitPreview');
+        if (preview) {
+            preview.textContent = '₹' + diff.toFixed(2) + (sell > 0 ? ' (' + ((diff / sell) * 100).toFixed(1) + '%)' : '');
+            preview.style.color = diff >= 0 ? '#10b981' : '#ef4444';
+        }
+
+        const boxPreview = document.getElementById('productBoxProfitPreview');
+        const boxLabel = document.getElementById('productUnitsPerBoxLabel');
+        if (boxLabel) boxLabel.textContent = unitsPerBox;
+        if (boxPreview) boxPreview.textContent = '₹' + boxDiff.toFixed(2);
+    }
+
+    handleProductSubmit(e) {
+        e.preventDefault();
+        const id = document.getElementById('productId')?.value;
+        const unitsPerBox = parseInt(document.getElementById('productUnitsPerBox')?.value) || 24;
+        const data = {
+            category: document.getElementById('productCategory')?.value,
+            name: document.getElementById('productName')?.value.trim(),
+            size: document.getElementById('productSize')?.value.trim(),
+            unitsPerBox: unitsPerBox,
+            stock: parseInt(document.getElementById('productStock')?.value) || 0,
+            buyPrice: parseFloat(document.getElementById('productBuyPrice')?.value) || 0,
+            sellPrice: parseFloat(document.getElementById('productSellPrice')?.value) || 0
+        };
+
+        if (id) {
+            this.store.updateProduct(id, data);
+            this.showToast('Product updated successfully!', 'success');
+        } else {
+            this.store.addProduct(data);
+            this.showToast('Product added to inventory!', 'success');
+        }
+        this.closeModal('productModal');
+        this.renderAll();
+    }
+
+    // ==========================================
+    // PURCHASE MODAL (FACTORY INFLOW)
+    // ==========================================
+    openPurchaseModal() {
+        document.getElementById('purchaseForm')?.reset();
+        document.getElementById('purchaseDate').value = this.getTodayStr();
+        this.populateProductSelect('purchaseProduct');
+        document.getElementById('purchaseTotalPreview').textContent = '₹0.00';
+        this.openModal('purchaseModal');
+    }
+
+    onPurchaseProductChange() {
+        const pid = document.getElementById('purchaseProduct')?.value;
+        const p = this.store.getProduct(pid);
+        if (p) {
+            document.getElementById('purchaseRate').value = p.buyPrice;
+            const unitsPerBox = p.unitsPerBox || 24;
+            document.getElementById('purchaseBoxRate').value = (p.buyPrice * unitsPerBox).toFixed(2);
+            this.calcPurchaseTotal();
+        }
+    }
+
+    onPurchaseBoxInput() {
+        const boxes = parseFloat(document.getElementById('purchaseBoxCount')?.value) || 0;
+        const pid = document.getElementById('purchaseProduct')?.value;
+        const p = this.store.getProduct(pid);
+        const unitsPerBox = p ? (p.unitsPerBox || 24) : 24;
+        document.getElementById('purchaseQty').value = Math.round(boxes * unitsPerBox);
+        this.calcPurchaseTotal();
+    }
+
+    onPurchaseUnitInput() {
+        const qty = parseInt(document.getElementById('purchaseQty')?.value) || 0;
+        const pid = document.getElementById('purchaseProduct')?.value;
+        const p = this.store.getProduct(pid);
+        const unitsPerBox = p ? (p.unitsPerBox || 24) : 24;
+        document.getElementById('purchaseBoxCount').value = (qty / unitsPerBox).toFixed(1);
+        this.calcPurchaseTotal();
+    }
+
+    onPurchaseBoxRateInput() {
+        const boxRate = parseFloat(document.getElementById('purchaseBoxRate')?.value) || 0;
+        const pid = document.getElementById('purchaseProduct')?.value;
+        const p = this.store.getProduct(pid);
+        const unitsPerBox = p ? (p.unitsPerBox || 24) : 24;
+        if (unitsPerBox > 0) {
+            document.getElementById('purchaseRate').value = (boxRate / unitsPerBox).toFixed(2);
+        }
+        this.calcPurchaseTotal();
+    }
+
+    calcPurchaseTotal() {
+        const qty = parseFloat(document.getElementById('purchaseQty')?.value) || 0;
+        const rate = parseFloat(document.getElementById('purchaseRate')?.value) || 0;
+        const total = qty * rate;
+        const el = document.getElementById('purchaseTotalPreview');
+        if (el) el.textContent = '₹' + total.toFixed(2);
+    }
+
+    handlePurchaseSubmit(e) {
+        e.preventDefault();
+        const pid = document.getElementById('purchaseProduct')?.value;
+        const p = this.store.getProduct(pid);
+        const qty = parseInt(document.getElementById('purchaseQty')?.value) || 0;
+        const rate = parseFloat(document.getElementById('purchaseRate')?.value) || 0;
+
+        this.store.addPurchase({
+            date: document.getElementById('purchaseDate')?.value,
+            factory: document.getElementById('purchaseFactory')?.value.trim(),
+            productId: pid,
+            productName: p ? `${p.name} (${p.size || ''})` : 'Custom Product',
+            qty: qty,
+            rate: rate,
+            total: qty * rate,
+            notes: document.getElementById('purchaseNotes')?.value.trim()
+        });
+
+        this.showToast('Factory stock recorded and stock updated!', 'success');
+        this.closeModal('purchaseModal');
+        this.renderAll();
+    }
+
+    deletePurchase(id) {
+        if (confirm('Delete this purchase? Stock will be reversed.')) {
+            this.store.deletePurchase(id);
+            this.showToast('Purchase deleted and stock updated.', 'info');
+            this.renderAll();
+        }
+    }
+
+    // ==========================================
+    // SALE MODAL (STORE OUTFLOW & TEAM COMMISSION)
+    // ==========================================
+    openSaleModal() {
+        document.getElementById('saleForm')?.reset();
+        document.getElementById('saleDate').value = this.getTodayStr();
+        this.populateStoreSelect('saleStore');
+
+        const itemsList = document.getElementById('saleOrderItemsList');
+        if (itemsList) {
+            itemsList.innerHTML = '';
+            this.addSaleItemRow();
+        }
+
+        const drivers = this.store.getStaffList().filter(s => s.role === 'Driver');
+        const helpers = this.store.getStaffList().filter(s => s.role === 'Helper');
+        if (drivers.length > 0 && document.getElementById('saleDriver1')) document.getElementById('saleDriver1').value = drivers[0].name;
+        if (helpers.length > 0 && document.getElementById('saleDriver2')) document.getElementById('saleDriver2').value = helpers[0].name;
+
+        this.onSalePaymentStatusChange();
+        this.calcSaleCalculations();
+        this.openModal('saleModal');
+    }
+
+    addHelperRow() {
+        const container = document.getElementById('driverRowsContainer');
+        if (!container) return;
+        const helperIndex = container.querySelectorAll('.helper-group').length + 2;
+        const div = document.createElement('div');
+        div.className = 'form-group helper-group';
+        div.innerHTML = `
+            <label>Helper ${helperIndex}</label>
+            <div style="display:flex; gap: 5px;">
+                <input type="text" class="saleHelperInput" list="staffList" placeholder="Select or type helper name">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="this.parentElement.parentElement.remove()" style="padding: 0 8px;">×</button>
+            </div>
+        `;
+        container.appendChild(div);
+    }
+
+    addSaleItemRow() {
+        const list = document.getElementById('saleOrderItemsList');
+        if (!list) return;
+
+        const row = document.createElement('div');
+        row.className = 'sale-item-row';
+        row.style.cssText = 'display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px;';
+        
+        let productOptions = '<option value="">-- Select Product --</option>';
+        this.store.getProducts().forEach(p => {
+            productOptions += `<option value="${p.id}" data-units="${p.unitsPerBox || 24}" data-price="${p.sellPrice}" data-buy="${p.buyPrice}">${p.name} (${p.size || ''}) [${p.unitsPerBox || 24}/box] (Stock: ${p.stock})</option>`;
+        });
+
+        row.innerHTML = `
+            <div>
+                <label style="font-size:0.75rem;">Product</label>
+                <select class="itemProductSelect" onchange="app.onSaleRowProductChange(this)">${productOptions}</select>
+            </div>
+            <div>
+                <label style="font-size:0.75rem;">Boxes</label>
+                <input type="number" min="0" step="any" class="itemBoxInput" placeholder="0" oninput="app.onSaleRowBoxInput(this)">
+            </div>
+            <div>
+                <label style="font-size:0.75rem;">Total Units</label>
+                <input type="number" min="1" class="itemQtyInput" placeholder="0" oninput="app.onSaleRowUnitInput(this)">
+            </div>
+            <div>
+                <label style="font-size:0.75rem;">Rate (₹/Unit)</label>
+                <input type="number" step="0.01" class="itemRateInput" oninput="app.calcSaleCalculations()">
+            </div>
+            <div>
+                <label style="font-size:0.75rem;">Line Total</label>
+                <div class="itemLineTotal" style="font-weight:700; color:#38bdf8; font-size:0.9rem; margin-top:6px;">₹0.00</div>
+            </div>
+            <div style="padding-top: 14px;">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="this.parentElement.parentElement.remove(); app.calcSaleCalculations();">×</button>
+            </div>
+        `;
+        list.appendChild(row);
+    }
+
+    onSaleRowProductChange(selectEl) {
+        const row = selectEl.closest('.sale-item-row');
+        const opt = selectEl.options[selectEl.selectedIndex];
+        if (opt && opt.value) {
+            const price = parseFloat(opt.getAttribute('data-price')) || 0;
+            const units = parseInt(opt.getAttribute('data-units')) || 24;
+            row.querySelector('.itemRateInput').value = price;
+            const boxInput = row.querySelector('.itemBoxInput');
+            if (!boxInput.value || parseFloat(boxInput.value) <= 0) {
+                boxInput.value = 1;
+            }
+            row.querySelector('.itemQtyInput').value = Math.round((parseFloat(boxInput.value) || 1) * units);
+            this.calcSaleCalculations();
+        }
+    }
+
+    onSaleRowBoxInput(boxInput) {
+        const row = boxInput.closest('.sale-item-row');
+        const select = row.querySelector('.itemProductSelect');
+        const opt = select?.options[select.selectedIndex];
+        const unitsPerBox = opt ? (parseInt(opt.getAttribute('data-units')) || 24) : 24;
+        const boxes = parseFloat(boxInput.value) || 0;
+        row.querySelector('.itemQtyInput').value = Math.round(boxes * unitsPerBox);
+        this.calcSaleCalculations();
+    }
+
+    onSaleRowUnitInput(qtyInput) {
+        const row = qtyInput.closest('.sale-item-row');
+        const select = row.querySelector('.itemProductSelect');
+        const opt = select?.options[select.selectedIndex];
+        const unitsPerBox = opt ? (parseInt(opt.getAttribute('data-units')) || 24) : 24;
+        const qty = parseInt(qtyInput.value) || 0;
+        row.querySelector('.itemBoxInput').value = (qty / unitsPerBox).toFixed(1);
+        this.calcSaleCalculations();
+    }
+
+    onSalePaymentStatusChange() {
+        const status = document.getElementById('salePaymentStatus')?.value;
+        const paidGroup = document.getElementById('salePaidAmountGroup');
+        if (paidGroup) {
+            paidGroup.style.display = status === 'Partial' ? 'block' : 'none';
+        }
+    }
+
+    calcSaleCalculations() {
+        let grandTotal = 0;
+        let grandProfit = 0;
+
+        const rows = document.querySelectorAll('.sale-item-row');
+        rows.forEach(row => {
+            const select = row.querySelector('.itemProductSelect');
+            const opt = select?.options[select.selectedIndex];
+            const qty = parseInt(row.querySelector('.itemQtyInput')?.value) || 0;
+            const rate = parseFloat(row.querySelector('.itemRateInput')?.value) || 0;
+            const buyPrice = opt ? (parseFloat(opt.getAttribute('data-buy')) || 0) : 0;
+
+            const total = qty * rate;
+            const profit = (rate - buyPrice) * qty;
+
+            const lineTotalEl = row.querySelector('.itemLineTotal');
+            if (lineTotalEl) lineTotalEl.textContent = '₹' + total.toFixed(2);
+
+            grandTotal += total;
+            grandProfit += profit;
+        });
+
+        const totalPreview = document.getElementById('saleTotalPreview');
+        const profitPreview = document.getElementById('saleProfitPreview');
+        if (totalPreview) totalPreview.textContent = '₹' + grandTotal.toFixed(2);
+        if (profitPreview) profitPreview.textContent = '₹' + grandProfit.toFixed(2);
+    }
+
+    handleSaleSubmit(e) {
+        e.preventDefault();
+        const date = document.getElementById('saleDate')?.value;
+        const sid = document.getElementById('saleStore')?.value;
+        const store = this.store.getStore(sid);
+        const status = document.getElementById('salePaymentStatus')?.value;
+        const driverName = document.getElementById('saleDriver1')?.value.trim();
+        
+        const helperInputs = document.querySelectorAll('.saleHelperInput');
+        const helperNames = [];
+        helperInputs.forEach(input => {
+            if (input.value.trim()) helperNames.push(input.value.trim());
+        });
+
+        const rows = document.querySelectorAll('.sale-item-row');
+        if (rows.length === 0) {
+            alert('Please add at least one product to the sale.');
+            return;
+        }
+
+        let totalBoxesAllProducts = 0;
+
+        rows.forEach(row => {
+            const select = row.querySelector('.itemProductSelect');
+            const pid = select?.value;
+            if (!pid) return;
+            const p = this.store.getProduct(pid);
+            const qty = parseInt(row.querySelector('.itemQtyInput')?.value) || 0;
+            const boxes = parseFloat(row.querySelector('.itemBoxInput')?.value) || (qty / (p?.unitsPerBox || 24));
+            const rate = parseFloat(row.querySelector('.itemRateInput')?.value) || 0;
+            const buyPrice = p ? (p.buyPrice || 0) : 0;
+            const lineTotal = qty * rate;
+            const profit = (rate - buyPrice) * qty;
+
+            totalBoxesAllProducts += Math.max(0, boxes);
+
+            this.store.addSale({
+                date: date,
+                storeId: sid,
+                storeName: store ? store.name : 'Direct Sale',
+                productId: pid,
+                productName: p ? `${p.name} (${p.size || ''})` : 'Product',
+                qty: qty,
+                boxes: boxes,
+                rate: rate,
+                total: lineTotal,
+                buyPrice: buyPrice,
+                profit: profit,
+                status: status,
+                paidAmount: status === 'Paid' ? lineTotal : (status === 'Partial' ? (parseFloat(document.getElementById('salePaidAmount')?.value) || 0) : 0),
+                driverName: driverName,
+                helperNames: helperNames
+            });
+        });
+
+        const month = date.substring(0, 7);
+        const storeLabel = store ? store.name : 'Store Delivery';
+
+        // Auto-credit Driver Commission: ₹2 per box
+        if (driverName && totalBoxesAllProducts > 0) {
+            let staff = this.store.getStaffByName(driverName);
+            if (!staff) {
+                staff = this.store.addStaff({ name: driverName, role: 'Driver', baseFixedSalary: 12000 });
+            }
+            this.store.addStaffDelivery({
+                staffId: staff.id,
+                staffName: staff.name,
+                role: 'Driver',
+                date: date,
+                month: month,
+                storeName: storeLabel,
+                boxCount: Math.round(totalBoxesAllProducts),
+                ratePerBox: 2,
+                totalCommission: Math.round(totalBoxesAllProducts) * 2,
+                source: 'Store Sale'
+            });
+        }
+
+        // Auto-credit Helper Commission: ₹1 per box
+        helperNames.forEach(hName => {
+            if (hName && totalBoxesAllProducts > 0) {
+                let hStaff = this.store.getStaffByName(hName);
+                if (!hStaff) {
+                    hStaff = this.store.addStaff({ name: hName, role: 'Helper', baseFixedSalary: 9000 });
+                }
+                this.store.addStaffDelivery({
+                    staffId: hStaff.id,
+                    staffName: hStaff.name,
+                    role: 'Helper',
+                    date: date,
+                    month: month,
+                    storeName: storeLabel,
+                    boxCount: Math.round(totalBoxesAllProducts),
+                    ratePerBox: 1,
+                    totalCommission: Math.round(totalBoxesAllProducts) * 1,
+                    source: 'Store Sale'
+                });
+            }
+        });
+
+        this.showToast('Sale recorded! Store accounts, stock and staff commissions updated.', 'success');
+        this.closeModal('saleModal');
+        this.renderAll();
+    }
+
+    deleteSale(id) {
+        if (confirm('Delete this sale record? Inventory and store ledger will be reversed.')) {
+            this.store.deleteSale(id);
+            this.showToast('Sale deleted!', 'info');
+            this.renderAll();
+        }
+    }
+
+    // ==========================================
+    // 20L DRUM ORDER MODAL
+    // ==========================================
+    openDrumOrderModal() {
+        document.getElementById('drumOrderForm')?.reset();
+        document.getElementById('drumDate').value = this.getTodayStr();
+        const storeSelect = document.getElementById('drumStoreSelect');
+        if (storeSelect) {
+            storeSelect.innerHTML = '<option value="">-- Select Store or Walk-in Customer --</option>';
+            this.store.getStores().forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.name;
+                storeSelect.appendChild(opt);
+            });
+        }
+        
+        const drivers = this.store.getStaffList().filter(s => s.role === 'Driver');
+        const helpers = this.store.getStaffList().filter(s => s.role === 'Helper');
+        if (drivers.length > 0 && document.getElementById('drumDriver1')) document.getElementById('drumDriver1').value = drivers[0].name;
+        if (helpers.length > 0 && document.getElementById('drumDriver2')) document.getElementById('drumDriver2').value = helpers[0].name;
+
+        document.getElementById('drumQty').value = 10;
+        document.getElementById('drumRate').value = 35;
+        this.calcDrumTotal();
+        this.openModal('drumOrderModal');
+    }
+
+    onDrumStoreChange() {
+        const sid = document.getElementById('drumStoreSelect')?.value;
+        if (sid) {
+            const s = this.store.getStore(sid);
+            if (s && document.getElementById('drumCustomerName')) document.getElementById('drumCustomerName').value = s.name;
+        }
+    }
+
+    calcDrumTotal() {
+        const qty = parseFloat(document.getElementById('drumQty')?.value) || 0;
+        const rate = parseFloat(document.getElementById('drumRate')?.value) || 0;
+        const preview = document.getElementById('drumTotalPreview');
+        if (preview) preview.textContent = '₹' + (qty * rate).toFixed(2);
+    }
+
+    handleDrumOrderSubmit(e) {
+        e.preventDefault();
+        const date = document.getElementById('drumDate')?.value;
+        const sid = document.getElementById('drumStoreSelect')?.value;
+        const customerName = document.getElementById('drumCustomerName')?.value.trim() || (sid ? this.store.getStore(sid)?.name : 'Walk-in Customer');
+        const qty = parseInt(document.getElementById('drumQty')?.value) || 0;
+        const rate = parseFloat(document.getElementById('drumRate')?.value) || 0;
+        const empties = parseInt(document.getElementById('drumEmptiesReturned')?.value) || 0;
+        const status = document.getElementById('drumStatus')?.value;
+        const driver1 = document.getElementById('drumDriver1')?.value.trim();
+        const driver2 = document.getElementById('drumDriver2')?.value.trim();
+
+        this.store.addDrumOrder({
+            date: date,
+            storeId: sid,
+            customer: customerName,
+            qty: qty,
+            rate: rate,
+            total: qty * rate,
+            emptiesReturned: empties,
+            status: status,
+            driver1: driver1,
+            driver2: driver2
+        });
+
+        this.showToast('20L Drum order added!', 'success');
+        this.closeModal('drumOrderModal');
+        this.renderAll();
+    }
+
+    deleteDrumOrder(id) {
+        if (confirm('Delete this drum order?')) {
+            this.store.deleteDrumOrder(id);
+            this.showToast('Drum order removed.', 'info');
+            this.renderAll();
+        }
+    }
+
+    // ==========================================
+    // STORE MODAL & STATEMENT
+    // ==========================================
+    openStoreModal(store = null) {
+        document.getElementById('storeForm')?.reset();
+        if (store) {
+            document.getElementById('storeModalTitle').textContent = 'Edit Store Details';
+            document.getElementById('storeId').value = store.id;
+            document.getElementById('storeName').value = store.name;
+            document.getElementById('storeOwner').value = store.owner || '';
+            document.getElementById('storePhone').value = store.phone || '';
+            document.getElementById('storeAddress').value = store.address || '';
+            document.getElementById('storeOpeningBalance').value = store.balanceDue || 0;
+        } else {
+            document.getElementById('storeModalTitle').textContent = 'Add New Store';
+            document.getElementById('storeId').value = '';
+            document.getElementById('storeOpeningBalance').value = 0;
+        }
+        this.openModal('storeModal');
+    }
+
+    editStore(id) {
+        const s = this.store.getStore(id);
+        if (s) this.openStoreModal(s);
+    }
+
+    deleteStore(id) {
+        if (confirm('Delete this store and its khata record?')) {
+            this.store.deleteStore(id);
+            this.showToast('Store removed!', 'info');
+            this.renderAll();
+        }
+    }
+
+    handleStoreSubmit(e) {
+        e.preventDefault();
+        const id = document.getElementById('storeId')?.value;
+        const data = {
+            name: document.getElementById('storeName')?.value.trim(),
+            owner: document.getElementById('storeOwner')?.value.trim(),
+            phone: document.getElementById('storePhone')?.value.trim(),
+            address: document.getElementById('storeAddress')?.value.trim(),
+            openingBalance: parseFloat(document.getElementById('storeOpeningBalance')?.value) || 0
+        };
+
+        if (id) {
+            this.store.updateStore(id, data);
+            this.showToast('Store details updated!', 'success');
+        } else {
+            this.store.addStore(data);
+            this.showToast('New Store added to database!', 'success');
+        }
+        this.closeModal('storeModal');
+        this.renderAll();
+    }
+
+    openPaymentModal(storeId) {
+        const s = this.store.getStore(storeId);
+        if (!s) return;
+        document.getElementById('paymentForm')?.reset();
+        document.getElementById('paymentStoreId').value = s.id;
+        document.getElementById('paymentStoreName').textContent = s.name;
+        document.getElementById('paymentCurrentDue').textContent = '₹' + (s.balanceDue || 0).toFixed(2);
+        document.getElementById('paymentDate').value = this.getTodayStr();
+        document.getElementById('paymentAmount').value = s.balanceDue > 0 ? s.balanceDue : '';
+        this.openModal('paymentModal');
+    }
+
+    handlePaymentSubmit(e) {
+        e.preventDefault();
+        const sid = document.getElementById('paymentStoreId')?.value;
+        const store = this.store.getStore(sid);
+        const amount = parseFloat(document.getElementById('paymentAmount')?.value) || 0;
+        const date = document.getElementById('paymentDate')?.value;
+        const note = document.getElementById('paymentNotes')?.value.trim();
+
+        this.store.addPayment({
+            storeId: sid,
+            storeName: store ? store.name : 'Store',
+            date: date,
+            amount: amount,
+            note: note || 'Payment Received'
+        });
+
+        this.showToast(`Payment of ₹${amount.toFixed(2)} recorded! Store balance updated.`, 'success');
+        this.closeModal('paymentModal');
+        this.renderAll();
+    }
+
+    openStatement(storeId) {
+        const store = this.store.getStore(storeId);
+        if (!store) return;
+        this.currentStatementStoreId = storeId;
+
+        const nameEl = document.getElementById('statementStoreName');
+        const detailsEl = document.getElementById('statementStoreDetails');
+        const balEl = document.getElementById('statementBalanceDue');
+        const boughtEl = document.getElementById('statementTotalBought');
+        const paidEl = document.getElementById('statementTotalPaid');
+
+        if (nameEl) nameEl.textContent = 'Khata Statement — ' + store.name;
+        if (detailsEl) detailsEl.textContent = '👤 ' + (store.owner || 'N/A') + ' • 📞 ' + (store.phone || 'N/A') + ' • 📍 ' + (store.address || 'No address');
+        if (balEl) balEl.textContent = '₹' + (store.balanceDue || 0).toFixed(2);
+        if (boughtEl) boughtEl.textContent = '₹' + (store.totalBought || 0).toFixed(2);
+        if (paidEl) paidEl.textContent = '₹' + (store.totalPaid || 0).toFixed(2);
+
+        const tbody = document.getElementById('statementTableBody');
+        if (tbody) {
+            tbody.innerHTML = '';
+            const sales = this.store.getSales().filter(s => s.storeId === storeId);
+            const payments = this.store.getPayments().filter(p => p.storeId === storeId);
+
+            const rows = [];
+            sales.forEach(s => rows.push({
+                date: s.date,
+                type: 'SALE BILLING',
+                desc: s.productName + ' (' + s.qty + ' units)',
+                debit: s.total,
+                credit: 0
+            }));
+
+            payments.forEach(p => rows.push({
+                date: p.date,
+                type: 'PAYMENT RECEIVED',
+                desc: p.note || 'Payment',
+                debit: 0,
+                credit: p.amount
+            }));
+
+            rows.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            let runningBal = store.openingBalance || 0;
+            if (rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 24px; color: var(--text-muted);">No sales or payments recorded yet for this store.</td></tr>';
+            } else {
+                rows.forEach(r => {
+                    runningBal += (r.debit - r.credit);
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${r.date}</td>
+                        <td><span class="badge ${r.type === 'SALE BILLING' ? 'badge-primary' : 'badge-success'}">${r.type}</span></td>
+                        <td>${r.desc}</td>
+                        <td style="color:#f87171;">${r.debit > 0 ? '₹' + r.debit.toFixed(2) : '-'}</td>
+                        <td style="color:#10b981;">${r.credit > 0 ? '₹' + r.credit.toFixed(2) : '-'}</td>
+                        <td><strong>₹${runningBal.toFixed(2)}</strong></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        this.openModal('statementModal');
+    }
+
+    openSaleFromStatement() {
+        const sid = this.currentStatementStoreId;
+        this.closeModal('statementModal');
+        this.openSaleModal();
+        if (sid) {
+            const select = document.getElementById('saleStore');
+            if (select) select.value = sid;
+        }
+    }
+
+    openPaymentFromStatement() {
+        const sid = this.currentStatementStoreId;
+        this.closeModal('statementModal');
+        if (sid) this.openPaymentModal(sid);
+    }
+
+    // ==========================================
+    // RESET & SEED DATA
+    // ==========================================
+    openResetModal() {
+        this.openModal('resetModal');
+    }
+
+    resetDataToZero(wipeEverything = false) {
+        if (wipeEverything) {
+            if (!confirm('⚠️ Are you sure you want to completely wipe the entire database to a 100% blank slate?')) return;
+            this.store.data = {
+                products: [],
+                stores: [],
+                purchases: [],
+                sales: [],
+                drumOrders: [],
+                payments: [],
+                staff: [
+                    { id: 'st_mantu', name: 'MANTU', role: 'Driver', baseFixedSalary: 0, phone: '' },
+                    { id: 'st_chandan', name: 'CHANDAN', role: 'Helper', baseFixedSalary: 0, phone: '' }
+                ],
+                staffDeliveries: [],
+                staffMonthlySalaries: []
+            };
+            this.store.save();
+            this.showToast('All data wiped clean! Starting 100% blank.', 'info');
+        } else {
+            if (!confirm('Reset all stock to 0, clear all sales, purchases, 20L drum orders, store balances, staff salaries, advances and commissions to 0?')) return;
+            (this.store.data.products || []).forEach(p => { p.stock = 0; });
+            (this.store.data.stores || []).forEach(s => {
+                s.totalBought = 0;
+                s.totalPaid = 0;
+                s.balanceDue = 0;
+                s.openingBalance = 0;
+            });
+            (this.store.data.staff || []).forEach(st => {
+                st.baseFixedSalary = 0;
+            });
+            this.store.data.purchases = [];
+            this.store.data.sales = [];
+            this.store.data.drumOrders = [];
+            this.store.data.payments = [];
+            this.store.data.staffDeliveries = [];
+            this.store.data.staffMonthlySalaries = [];
+            this.store.save();
+            this.showToast('All stocks, sales, dues, profits & staff salaries reset to 0!', 'success');
+        }
+        this.closeModal('resetModal');
+        this.renderAll();
+    }
+
+    // ==========================================
+    // RENDER: PRODUCT DEMAND & SALES ANALYTICS
+    // ==========================================
+    renderAnalytics() {
+        const products = this.store.getProducts() || [];
+        const sales = this.store.getSales() || [];
+        const purchases = this.store.getPurchases() || [];
+        const stores = this.store.getStores() || [];
+
+        // Build Comprehensive Product Intelligence Dataset
+        const pStats = products.map(p => {
+            const unitsPerBox = p.unitsPerBox || 1;
+            const pSales = sales.filter(s => s.productId === p.id);
+            const pPurchases = purchases.filter(pur => pur.productId === p.id);
+
+            const totalUnitsSold = pSales.reduce((acc, s) => acc + (s.qty || 0), 0);
+            const totalBoxesSold = totalUnitsSold / unitsPerBox;
+            const totalUnitsPurchased = pPurchases.reduce((acc, pur) => acc + (pur.qty || 0), 0);
+            const totalBoxesPurchased = totalUnitsPurchased / unitsPerBox;
+
+            const totalRevenue = pSales.reduce((acc, s) => acc + (s.total || 0), 0);
+            const totalProfit = pSales.reduce((acc, s) => acc + (s.profit || 0), 0);
+
+            // Store penetration & adoption
+            const storeOrderMap = {};
+            pSales.forEach(s => {
+                if (!storeOrderMap[s.storeId]) {
+                    storeOrderMap[s.storeId] = {
+                        storeId: s.storeId,
+                        storeName: s.storeName || 'Store',
+                        units: 0,
+                        boxes: 0,
+                        revenue: 0,
+                        ordersCount: 0,
+                        lastDate: s.date
+                    };
+                }
+                storeOrderMap[s.storeId].units += (s.qty || 0);
+                storeOrderMap[s.storeId].boxes += (s.qty || 0) / unitsPerBox;
+                storeOrderMap[s.storeId].revenue += (s.total || 0);
+                storeOrderMap[s.storeId].ordersCount++;
+                if (new Date(s.date) > new Date(storeOrderMap[s.storeId].lastDate)) {
+                    storeOrderMap[s.storeId].lastDate = s.date;
+                }
+            });
+
+            const uniqueStoresCount = Object.keys(storeOrderMap).length;
+            const storePenetration = stores.length > 0 ? (uniqueStoresCount / stores.length) * 100 : 0;
+            const avgBoxesPerStore = uniqueStoresCount > 0 ? (totalBoxesSold / uniqueStoresCount) : 0;
+
+            // Turnaround / Velocity (Sell-through rate after restock)
+            const totalStockHandled = totalUnitsPurchased + (p.stock || 0) + totalUnitsSold;
+            const sellThroughRate = totalStockHandled > 0 ? ((totalUnitsSold / totalStockHandled) * 100) : 0;
+            
+            // Velocity score combines sell-through speed & sales count
+            const velocityScore = (sellThroughRate * 0.7) + (Math.min(totalBoxesSold, 100) * 0.3);
+
+            const profitPerUnit = (p.sellPrice || 0) - (p.buyPrice || 0);
+            const profitPerBox = profitPerUnit * unitsPerBox;
+            const profitMarginPct = p.sellPrice > 0 ? ((profitPerUnit / p.sellPrice) * 100) : 0;
+
+            return {
+                product: p,
+                id: p.id,
+                name: p.name,
+                size: p.size,
+                category: p.category,
+                unitsPerBox,
+                currentStockUnits: p.stock || 0,
+                currentStockBoxes: (p.stock || 0) / unitsPerBox,
+                totalUnitsSold,
+                totalBoxesSold,
+                totalUnitsPurchased,
+                totalBoxesPurchased,
+                totalRevenue,
+                totalProfit,
+                profitPerBox,
+                profitMarginPct,
+                uniqueStoresCount,
+                storePenetration,
+                avgBoxesPerStore,
+                storeOrderMap,
+                sellThroughRate,
+                velocityScore
+            };
+        });
+
+        // 1. Identify Top Highlights
+        const fastVelocitySorted = [...pStats].sort((a, b) => b.velocityScore - a.velocityScore);
+        const longRunSorted = [...pStats].sort((a, b) => b.totalBoxesSold - a.totalBoxesSold);
+        const storeReachSorted = [...pStats].sort((a, b) => b.uniqueStoresCount - a.uniqueStoresCount || b.totalBoxesSold - a.totalBoxesSold);
+        const bulkNicheSorted = [...pStats].filter(p => p.totalBoxesSold > 0).sort((a, b) => b.avgBoxesPerStore - a.avgBoxesPerStore);
+        const profitSorted = [...pStats].sort((a, b) => b.totalProfit - a.totalProfit);
+
+        const topFast = fastVelocitySorted[0];
+        const topLongRun = longRunSorted[0];
+        const topReach = storeReachSorted[0];
+        const topNiche = bulkNicheSorted[0] || longRunSorted[0];
+        const topProfit = profitSorted[0];
+
+        // 2. Render 5 Quick Key Intelligence Metric Cards
+        const quickMetricsEl = document.getElementById('analyticsQuickMetrics');
+        if (quickMetricsEl) {
+            quickMetricsEl.innerHTML = `
+                <div class="analytics-kpi-card" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: var(--radius-md); padding: 14px 16px;">
+                    <div style="font-size: 0.74rem; font-weight: 700; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+                        <span>⚡ Fastest Velocity</span>
+                    </div>
+                    <div style="font-size: 1.15rem; font-weight: 800; color: #fef08a; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${topFast ? topFast.name + ' (' + topFast.size + ')' : 'N/A'}">
+                        ${topFast ? topFast.name : 'No sales yet'}
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">
+                        ${topFast ? `${topFast.size} • <strong>${topFast.sellThroughRate.toFixed(0)}%</strong> turnaround` : 'Awaiting restock sales'}
+                    </div>
+                </div>
+
+                <div class="analytics-kpi-card" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-md); padding: 14px 16px;">
+                    <div style="font-size: 0.74rem; font-weight: 700; color: #10b981; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+                        <span>🏆 Long-Run Champion</span>
+                    </div>
+                    <div style="font-size: 1.15rem; font-weight: 800; color: #86efac; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${topLongRun ? topLongRun.name + ' (' + topLongRun.size + ')' : 'N/A'}">
+                        ${topLongRun ? topLongRun.name : 'No sales yet'}
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">
+                        ${topLongRun ? `${topLongRun.size} • <strong>${topLongRun.totalBoxesSold.toFixed(1)} boxes</strong> sold` : 'Steady volume'}
+                    </div>
+                </div>
+
+                <div class="analytics-kpi-card" style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: var(--radius-md); padding: 14px 16px;">
+                    <div style="font-size: 0.74rem; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+                        <span>🌐 Most Store Demand</span>
+                    </div>
+                    <div style="font-size: 1.15rem; font-weight: 800; color: #bae6fd; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${topReach ? topReach.name + ' (' + topReach.size + ')' : 'N/A'}">
+                        ${topReach ? topReach.name : 'No stores yet'}
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">
+                        ${topReach ? `In <strong>${topReach.uniqueStoresCount} of ${stores.length}</strong> stores (${topReach.storePenetration.toFixed(0)}%)` : 'Mass retail favorite'}
+                    </div>
+                </div>
+
+                <div class="analytics-kpi-card" style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: var(--radius-md); padding: 14px 16px;">
+                    <div style="font-size: 0.74rem; font-weight: 700; color: #c084fc; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+                        <span>🎯 Top Bulk Niche</span>
+                    </div>
+                    <div style="font-size: 1.15rem; font-weight: 800; color: #e9d5ff; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${topNiche ? topNiche.name + ' (' + topNiche.size + ')' : 'N/A'}">
+                        ${topNiche ? topNiche.name : 'N/A'}
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">
+                        ${topNiche ? `Avg <strong>${topNiche.avgBoxesPerStore.toFixed(1)} boxes</strong> / store` : 'Concentrated buyers'}
+                    </div>
+                </div>
+
+                <div class="analytics-kpi-card" style="background: rgba(236, 72, 153, 0.1); border: 1px solid rgba(236, 72, 153, 0.3); border-radius: var(--radius-md); padding: 14px 16px;">
+                    <div style="font-size: 0.74rem; font-weight: 700; color: #f472b6; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+                        <span>💎 Top Profit Leader</span>
+                    </div>
+                    <div style="font-size: 1.15rem; font-weight: 800; color: #fbcfe8; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${topProfit ? topProfit.name + ' (' + topProfit.size + ')' : 'N/A'}">
+                        ${topProfit ? topProfit.name : '₹0.00'}
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">
+                        ${topProfit ? `<strong>₹${topProfit.totalProfit.toFixed(2)}</strong> total profit (${topProfit.profitMarginPct.toFixed(0)}% margin)` : 'Highest earnings'}
+                    </div>
+                </div>
+            `;
+        }
+
+        // 3. Render Quadrant 1: Fast Velocity List
+        const fastListEl = document.getElementById('analyticsFastVelocityList');
+        if (fastListEl) {
+            fastListEl.innerHTML = fastVelocitySorted.slice(0, 5).map((p, idx) => {
+                const badge = p.sellThroughRate > 75 ? '<span class="badge badge-warning">⚡ Ultra-Fast</span>' : (p.sellThroughRate > 40 ? '<span class="badge badge-success">🔥 Rapid</span>' : '<span class="badge badge-info">📈 Normal</span>');
+                return `
+                    <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; transition: var(--transition);" onclick="app.selectAnalyticsProduct('${p.id}')">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                                <span style="color:#f59e0b; font-size:0.8rem;">#${idx + 1}</span>
+                                <span>${p.name}</span>
+                                <span style="font-size:0.75rem; color:var(--text-muted);">(${p.size})</span>
+                            </div>
+                            ${badge}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-secondary);">
+                            <span>Restocked: <strong>${p.totalBoxesPurchased.toFixed(1)} boxes</strong></span>
+                            <span>Sold Out: <strong style="color:#10b981;">${p.totalBoxesSold.toFixed(1)} boxes</strong></span>
+                            <span>Turnaround: <strong style="color:#f59e0b;">${p.sellThroughRate.toFixed(0)}%</strong></span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.06); height: 6px; border-radius: 99px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #f59e0b, #ef4444); height: 100%; width: ${Math.min(p.sellThroughRate, 100)}%; border-radius: 99px;"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('') || '<div style="color:var(--text-muted); padding:16px; text-align:center;">No restock sales data yet.</div>';
+        }
+
+        // 4. Render Quadrant 2: Long Run Champions
+        const longRunListEl = document.getElementById('analyticsLongRunList');
+        if (longRunListEl) {
+            const maxBoxes = Math.max(...longRunSorted.map(p => p.totalBoxesSold), 1);
+            longRunListEl.innerHTML = longRunSorted.slice(0, 5).map((p, idx) => {
+                const pct = (p.totalBoxesSold / maxBoxes) * 100;
+                return `
+                    <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; transition: var(--transition);" onclick="app.selectAnalyticsProduct('${p.id}')">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                                <span style="color:#10b981; font-size:0.8rem;">#${idx + 1}</span>
+                                <span>${p.name}</span>
+                                <span style="font-size:0.75rem; color:var(--text-muted);">(${p.size})</span>
+                            </div>
+                            <span class="badge badge-success">₹${p.totalRevenue.toFixed(0)} Rev</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-secondary);">
+                            <span>Total Boxes: <strong style="color:#10b981;">${p.totalBoxesSold.toFixed(1)} boxes</strong></span>
+                            <span>Total Units: <strong>${p.totalUnitsSold}</strong></span>
+                            <span>Profit: <strong style="color:#38bdf8;">₹${p.totalProfit.toFixed(0)}</strong></span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.06); height: 6px; border-radius: 99px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #10b981, #06b6d4); height: 100%; width: ${pct}%; border-radius: 99px;"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('') || '<div style="color:var(--text-muted); padding:16px; text-align:center;">No long-run sales recorded yet.</div>';
+        }
+
+        // 5. Render Quadrant 3: Store Reach (Most Stores)
+        const storeReachListEl = document.getElementById('analyticsStoreReachList');
+        if (storeReachListEl) {
+            storeReachListEl.innerHTML = storeReachSorted.slice(0, 5).map((p, idx) => {
+                return `
+                    <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; transition: var(--transition);" onclick="app.selectAnalyticsProduct('${p.id}')">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                                <span style="color:#38bdf8; font-size:0.8rem;">#${idx + 1}</span>
+                                <span>${p.name}</span>
+                                <span style="font-size:0.75rem; color:var(--text-muted);">(${p.size})</span>
+                            </div>
+                            <span class="badge badge-info">${p.uniqueStoresCount} Stores</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-secondary);">
+                            <span>Store Penetration: <strong style="color:#38bdf8;">${p.storePenetration.toFixed(0)}%</strong></span>
+                            <span>Network Reach: <strong>${p.uniqueStoresCount} / ${stores.length}</strong></span>
+                            <span>Boxes/Store: <strong>${p.avgBoxesPerStore.toFixed(1)}</strong></span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.06); height: 6px; border-radius: 99px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #38bdf8, #6366f1); height: 100%; width: ${Math.min(p.storePenetration, 100)}%; border-radius: 99px;"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('') || '<div style="color:var(--text-muted); padding:16px; text-align:center;">No store sales recorded yet.</div>';
+        }
+
+        // 6. Render Quadrant 4: Bulk Niche List
+        const nicheListEl = document.getElementById('analyticsNicheList');
+        if (nicheListEl) {
+            nicheListEl.innerHTML = bulkNicheSorted.slice(0, 5).map((p, idx) => {
+                return `
+                    <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; transition: var(--transition);" onclick="app.selectAnalyticsProduct('${p.id}')">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                                <span style="color:#c084fc; font-size:0.8rem;">#${idx + 1}</span>
+                                <span>${p.name}</span>
+                                <span style="font-size:0.75rem; color:var(--text-muted);">(${p.size})</span>
+                            </div>
+                            <span class="badge badge-purple">${p.avgBoxesPerStore.toFixed(1)} Boxes/Store</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-secondary);">
+                            <span>Ordered by: <strong>${p.uniqueStoresCount} Stores</strong></span>
+                            <span>Total Volume: <strong style="color:#c084fc;">${p.totalBoxesSold.toFixed(1)} boxes</strong></span>
+                            <span>Profit/Box: <strong style="color:#10b981;">₹${p.profitPerBox.toFixed(2)}</strong></span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.06); height: 6px; border-radius: 99px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #a855f7, #ec4899); height: 100%; width: ${Math.min((p.avgBoxesPerStore / 30) * 100, 100)}%; border-radius: 99px;"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('') || '<div style="color:var(--text-muted); padding:16px; text-align:center;">No bulk niche data yet.</div>';
+        }
+
+        // 7. Populate Product Dropdown Selector
+        const selectEl = document.getElementById('analyticsProductSelect');
+        if (selectEl) {
+            const currentSelected = selectEl.value;
+            selectEl.innerHTML = products.map(p => `
+                <option value="${p.id}">${p.name} — ${p.size} (${p.category.toUpperCase()})</option>
+            `).join('');
+
+            if (currentSelected && products.some(p => p.id === currentSelected)) {
+                selectEl.value = currentSelected;
+            } else if (products.length > 0) {
+                selectEl.value = products[0].id;
+            }
+        }
+
+        // 8. Render Deep-Dive for Selected Product
+        const selectedId = selectEl ? selectEl.value : (products[0] ? products[0].id : null);
+        if (selectedId) {
+            this.renderProductDeepDive(selectedId, pStats);
+        }
+
+        // 9. Render Store Demand Matrix
+        this.renderStoreDemandMatrix(pStats);
+    }
+
+    selectAnalyticsProduct(productId) {
+        const selectEl = document.getElementById('analyticsProductSelect');
+        if (selectEl) {
+            selectEl.value = productId;
+            this.renderProductDeepDive(productId);
+            const card = document.getElementById('analyticsProductDetailView');
+            if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    onAnalyticsProductChange() {
+        const selectEl = document.getElementById('analyticsProductSelect');
+        if (selectEl) {
+            this.renderProductDeepDive(selectEl.value);
+        }
+    }
+
+    renderProductDeepDive(productId, precomputedStats = null) {
+        const detailEl = document.getElementById('analyticsProductDetailView');
+        if (!detailEl) return;
+
+        const p = this.store.getProduct(productId);
+        if (!p) {
+            detailEl.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-muted);">Select a product to view performance history.</div>';
+            return;
+        }
+
+        const sales = this.store.getSales() || [];
+        const purchases = this.store.getPurchases() || [];
+        const stores = this.store.getStores() || [];
+        const unitsPerBox = p.unitsPerBox || 1;
+
+        const pSales = sales.filter(s => s.productId === p.id);
+        const pPurchases = purchases.filter(pur => pur.productId === p.id);
+
+        const totalUnitsSold = pSales.reduce((acc, s) => acc + (s.qty || 0), 0);
+        const totalBoxesSold = totalUnitsSold / unitsPerBox;
+        const totalUnitsPurchased = pPurchases.reduce((acc, pur) => acc + (pur.qty || 0), 0);
+        const totalBoxesPurchased = totalUnitsPurchased / unitsPerBox;
+
+        const totalRevenue = pSales.reduce((acc, s) => acc + (s.total || 0), 0);
+        const totalProfit = pSales.reduce((acc, s) => acc + (s.profit || 0), 0);
+
+        const currentStockUnits = p.stock || 0;
+        const currentStockBoxes = currentStockUnits / unitsPerBox;
+
+        const profitPerUnit = (p.sellPrice || 0) - (p.buyPrice || 0);
+        const profitPerBox = profitPerUnit * unitsPerBox;
+        const profitMarginPct = p.sellPrice > 0 ? ((profitPerUnit / p.sellPrice) * 100) : 0;
+
+        // Store Consumption Map
+        const storeMap = {};
+        pSales.forEach(s => {
+            if (!storeMap[s.storeId]) {
+                const st = stores.find(str => str.id === s.storeId) || {};
+                storeMap[s.storeId] = {
+                    storeId: s.storeId,
+                    storeName: s.storeName || st.name || 'Store',
+                    owner: st.owner || 'N/A',
+                    address: st.address || 'N/A',
+                    phone: st.phone || '',
+                    units: 0,
+                    boxes: 0,
+                    revenue: 0,
+                    orderCount: 0,
+                    lastDate: s.date
+                };
+            }
+            storeMap[s.storeId].units += (s.qty || 0);
+            storeMap[s.storeId].boxes += (s.qty || 0) / unitsPerBox;
+            storeMap[s.storeId].revenue += (s.total || 0);
+            storeMap[s.storeId].orderCount++;
+            if (new Date(s.date) > new Date(storeMap[s.storeId].lastDate)) {
+                storeMap[s.storeId].lastDate = s.date;
+            }
+        });
+
+        const storeList = Object.values(storeMap).sort((a, b) => b.boxes - a.boxes);
+        const uniqueStoresCount = storeList.length;
+        const storePenetration = stores.length > 0 ? (uniqueStoresCount / stores.length) * 100 : 0;
+        const totalAvailableStock = currentStockUnits + totalUnitsSold;
+        const stockSoldPct = totalAvailableStock > 0 ? (totalUnitsSold / totalAvailableStock) * 100 : 0;
+
+        // Intelligence Badges
+        const tags = [];
+        if (stockSoldPct > 70) tags.push('<span class="badge badge-warning">⚡ Fast-Selling Mover</span>');
+        if (totalBoxesSold > 20) tags.push('<span class="badge badge-success">🏆 High Volume Winner</span>');
+        if (storePenetration > 50) tags.push('<span class="badge badge-info">🌐 High Store Reach (' + storePenetration.toFixed(0) + '%)</span>');
+        if (storeList.length > 0 && storeList[0].boxes > 15) tags.push('<span class="badge badge-purple">🎯 Bulk Store Favorite</span>');
+        if (tags.length === 0) tags.push('<span class="badge badge-info">📦 In Stock Catalog</span>');
+
+        // Color palette for horizontal store share bars
+        const barColors = ['#38bdf8', '#10b981', '#a855f7', '#f59e0b', '#ec4899', '#06b6d4', '#6366f1'];
+
+        detailEl.innerHTML = `
+            <!-- Hero Product Card -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 18px;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); margin: 0;">${p.name}</h3>
+                        <span class="badge badge-primary">${p.size}</span>
+                        <span class="badge badge-secondary">${unitsPerBox} Units / Box</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+                        ${tags.join(' ')}
+                    </div>
+                </div>
+                <div style="display: flex; gap: 18px; align-items: center; background: rgba(0,0,0,0.3); padding: 10px 18px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                    <div>
+                        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase;">Factory Buy Price</div>
+                        <div style="font-size:1.05rem; font-weight:700;">₹${(p.buyPrice || 0).toFixed(2)} / unit</div>
+                    </div>
+                    <div>
+                        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase;">Store Selling Rate</div>
+                        <div style="font-size:1.05rem; font-weight:700; color:#38bdf8;">₹${(p.sellPrice || 0).toFixed(2)} / unit</div>
+                    </div>
+                    <div>
+                        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase;">Gross Profit / Box</div>
+                        <div style="font-size:1.15rem; font-weight:800; color:#10b981;">₹${profitPerBox.toFixed(2)} <span style="font-size:0.75rem; font-weight:600;">(${profitMarginPct.toFixed(0)}%)</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6 Key Performance Metric Tiles -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                <div class="flow-stat-box">
+                    <div class="flow-stat-label">📦 Total Boxes Sold</div>
+                    <div class="flow-stat-value" style="color: #38bdf8;">${totalBoxesSold.toFixed(1)} <span style="font-size:0.8rem; color:var(--text-muted);">boxes</span></div>
+                    <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:2px;">${totalUnitsSold} total units</div>
+                </div>
+
+                <div class="flow-stat-box">
+                    <div class="flow-stat-label">🏬 Store Network Adoption</div>
+                    <div class="flow-stat-value" style="color: #a855f7;">${uniqueStoresCount} <span style="font-size:0.8rem; color:var(--text-muted);">/ ${stores.length} stores</span></div>
+                    <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:2px;">${storePenetration.toFixed(0)}% penetration rate</div>
+                </div>
+
+                <div class="flow-stat-box">
+                    <div class="flow-stat-label">💰 Total Net Revenue</div>
+                    <div class="flow-stat-value" style="color: #10b981;">₹${totalRevenue.toFixed(2)}</div>
+                    <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:2px;">From all store orders</div>
+                </div>
+
+                <div class="flow-stat-box">
+                    <div class="flow-stat-label">📈 Net Profit Generated</div>
+                    <div class="flow-stat-value" style="color: #10b981;">₹${totalProfit.toFixed(2)}</div>
+                    <div style="font-size:0.75rem; color:#10b981; margin-top:2px;">${profitMarginPct.toFixed(1)}% profit margin</div>
+                </div>
+
+                <div class="flow-stat-box">
+                    <div class="flow-stat-label">🏭 Factory Restocked</div>
+                    <div class="flow-stat-value">${totalBoxesPurchased.toFixed(1)} <span style="font-size:0.8rem; color:var(--text-muted);">boxes</span></div>
+                    <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:2px;">${totalUnitsPurchased} units bought</div>
+                </div>
+
+                <div class="flow-stat-box">
+                    <div class="flow-stat-label">📦 Current Stock In Hand</div>
+                    <div class="flow-stat-value" style="color: ${currentStockBoxes > 5 ? '#38bdf8' : '#ef4444'};">${currentStockBoxes.toFixed(1)} <span style="font-size:0.8rem; color:var(--text-muted);">boxes</span></div>
+                    <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:2px;">${currentStockUnits} units available</div>
+                </div>
+            </div>
+
+            <!-- Visual Store Consumption Distribution -->
+            <div style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px 20px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                    <div>
+                        <h4 style="margin: 0; font-size: 1rem; color: #38bdf8;">📊 Store-by-Store Consumption Breakdown</h4>
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">Visual distribution of which stores consume the biggest share of ${p.name}</div>
+                    </div>
+                    <span class="badge badge-info">${storeList.length} Ordering Stores</span>
+                </div>
+
+                ${storeList.length > 0 ? `
+                    <!-- Stacked Colored Progress Bar -->
+                    <div style="background: rgba(255,255,255,0.06); height: 16px; border-radius: 99px; overflow: hidden; display: flex; margin-bottom: 16px;">
+                        ${storeList.map((st, i) => {
+                            const pct = totalBoxesSold > 0 ? (st.boxes / totalBoxesSold) * 100 : 0;
+                            const color = barColors[i % barColors.length];
+                            return `<div style="background: ${color}; width: ${pct}%; height: 100%;" title="${st.storeName}: ${st.boxes.toFixed(1)} boxes (${pct.toFixed(1)}%)"></div>`;
+                        }).join('')}
+                    </div>
+
+                    <!-- Individual Store Share Bars -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px;">
+                        ${storeList.map((st, i) => {
+                            const pct = totalBoxesSold > 0 ? (st.boxes / totalBoxesSold) * 100 : 0;
+                            const color = barColors[i % barColors.length];
+                            return `
+                                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 14px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">${st.storeName}</span>
+                                        <span style="font-weight: 800; font-size: 0.88rem; color: ${color};">${pct.toFixed(1)}% share</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 6px;">
+                                        <span>Ordered: <strong>${st.boxes.toFixed(1)} boxes</strong> (${st.units} units)</span>
+                                        <span>Billed: <strong style="color:#10b981;">₹${st.revenue.toFixed(2)}</strong></span>
+                                    </div>
+                                    <div style="background: rgba(255,255,255,0.06); height: 5px; border-radius: 99px; overflow: hidden;">
+                                        <div style="background: ${color}; width: ${pct}%; height: 100%; border-radius: 99px;"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                ` : `
+                    <div style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.9rem;">
+                        No store sales recorded yet for this product. Use the <strong>+ New Sale</strong> button to record your first store order!
+                    </div>
+                `}
+            </div>
+
+            <!-- Detailed Store Orders Table for this Product -->
+            <h4 style="margin: 0 0 10px 0; font-size: 0.95rem; color: #f8fafc;">📋 Detailed Store Orders Table for ${p.name}</h4>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Store Name</th>
+                            <th>Owner / Contact</th>
+                            <th>Location / Address</th>
+                            <th>Boxes Consumed</th>
+                            <th>Total Units</th>
+                            <th>Total Billed (₹)</th>
+                            <th>Last Order Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${storeList.length > 0 ? storeList.map(st => `
+                            <tr>
+                                <td><strong>${st.storeName}</strong></td>
+                                <td>${st.owner} ${st.phone ? '• ' + st.phone : ''}</td>
+                                <td>${st.address || 'N/A'}</td>
+                                <td><strong style="color:#38bdf8;">${st.boxes.toFixed(1)} boxes</strong></td>
+                                <td>${st.units} units</td>
+                                <td style="color:#10b981; font-weight:700;">₹${st.revenue.toFixed(2)}</td>
+                                <td>${st.lastDate || 'N/A'}</td>
+                                <td>
+                                    <button class="btn btn-secondary btn-sm" onclick="app.openStatement('${st.storeId}')">📜 Khata</button>
+                                </td>
+                            </tr>
+                        `).join('') : `
+                            <tr>
+                                <td colspan="8" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                                    No orders yet.
+                                </td>
+                            </tr>
+                        `}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    renderStoreDemandMatrix(pStats = null) {
+        const matrixBody = document.getElementById('analyticsStoreMatrixBody');
+        if (!matrixBody) return;
+
+        const stores = this.store.getStores() || [];
+        const sales = this.store.getSales() || [];
+        const products = this.store.getProducts() || [];
+        const searchInput = document.getElementById('analyticsStoreSearch');
+        const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+        const storeDemands = stores.map(st => {
+            const stSales = sales.filter(s => s.storeId === st.id);
+            const totalRevenue = stSales.reduce((acc, s) => acc + (s.total || 0), 0);
+
+            // Group sales by product
+            const prodMap = {};
+            stSales.forEach(s => {
+                const prod = products.find(p => p.id === s.productId) || { name: s.productName, unitsPerBox: 1 };
+                const unitsPerBox = prod.unitsPerBox || 1;
+                if (!prodMap[s.productId]) {
+                    prodMap[s.productId] = {
+                        productId: s.productId,
+                        productName: prod.name || s.productName || 'Product',
+                        size: prod.size || '',
+                        units: 0,
+                        boxes: 0,
+                        revenue: 0
+                    };
+                }
+                prodMap[s.productId].units += (s.qty || 0);
+                prodMap[s.productId].boxes += (s.qty || 0) / unitsPerBox;
+                prodMap[s.productId].revenue += (s.total || 0);
+            });
+
+            const sortedProds = Object.values(prodMap).sort((a, b) => b.boxes - a.boxes);
+            const totalBoxes = sortedProds.reduce((acc, p) => acc + p.boxes, 0);
+
+            const primaryProd = sortedProds[0] || null;
+            const secondaryProds = sortedProds.slice(1);
+
+            let intensityBadge = '<span class="badge badge-info">🟢 Moderate</span>';
+            if (totalBoxes > 40) intensityBadge = '<span class="badge badge-warning">🔥 High Bulk Demander</span>';
+            else if (totalBoxes > 15) intensityBadge = '<span class="badge badge-success">⚡ Frequent Regular</span>';
+            else if (totalBoxes > 0) intensityBadge = '<span class="badge badge-info">📈 Active</span>';
+            else intensityBadge = '<span class="badge badge-secondary">💤 Inactive</span>';
+
+            return {
+                store: st,
+                primaryProd,
+                secondaryProds,
+                totalBoxes,
+                totalRevenue,
+                intensityBadge
+            };
+        });
+
+        const filtered = storeDemands.filter(item => {
+            if (!query) return true;
+            const sName = (item.store.name || '').toLowerCase();
+            const sAddr = (item.store.address || '').toLowerCase();
+            const sOwner = (item.store.owner || '').toLowerCase();
+            const pName = item.primaryProd ? (item.primaryProd.productName || '').toLowerCase() : '';
+            return sName.includes(query) || sAddr.includes(query) || sOwner.includes(query) || pName.includes(query);
+        });
+
+        filtered.sort((a, b) => b.totalBoxes - a.totalBoxes);
+
+        if (filtered.length === 0) {
+            matrixBody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 24px; color: var(--text-muted);">No matching stores or location demands found.</td></tr>`;
+            return;
+        }
+
+        matrixBody.innerHTML = filtered.map(item => `
+            <tr>
+                <td>
+                    <strong>${item.store.name}</strong>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">
+                        📍 ${item.store.address || 'No location specified'} ${item.store.owner ? '• 👤 ' + item.store.owner : ''}
+                    </div>
+                </td>
+                <td>
+                    ${item.primaryProd ? `
+                        <div style="font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                            <span>⭐ ${item.primaryProd.productName}</span>
+                            <span style="font-size:0.75rem; color:var(--text-muted);">(${item.primaryProd.size})</span>
+                        </div>
+                        <div style="font-size: 0.78rem; color: #10b981; font-weight: 600;">
+                            ${item.primaryProd.boxes.toFixed(1)} boxes ordered (₹${item.primaryProd.revenue.toFixed(0)})
+                        </div>
+                    ` : '<span style="color:var(--text-muted);">None</span>'}
+                </td>
+                <td>
+                    ${item.secondaryProds.length > 0 ? item.secondaryProds.map(p => `
+                        <span class="badge badge-secondary" style="margin: 2px;">${p.productName} (${p.boxes.toFixed(0)}b)</span>
+                    `).join('') : '<span style="color:var(--text-muted); font-size:0.8rem;">-</span>'}
+                </td>
+                <td>
+                    <strong style="font-size: 0.95rem; color: #f59e0b;">${item.totalBoxes.toFixed(1)}</strong>
+                    <span style="font-size: 0.78rem; color: var(--text-muted);">boxes</span>
+                </td>
+                <td style="color: #10b981; font-weight: 700;">₹${item.totalRevenue.toFixed(2)}</td>
+                <td>${item.intensityBadge}</td>
+                <td>
+                    <div style="display: flex; gap: 6px;">
+                        <button class="btn btn-secondary btn-sm" onclick="app.openStatement('${item.store.id}')" title="View Statement">📜 Khata</button>
+                        <button class="btn btn-primary btn-sm" onclick="app.openSaleModal(); document.getElementById('saleStore').value = '${item.store.id}';" title="New Sale">+ Sell</button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    reloadSeedData() {
+        if (!confirm('Reload sample demo data? Any existing custom entries will be replaced.')) return;
+        this.store.loadDemoSeedData();
+        this.showToast('Demo sample data loaded!', 'success');
+        this.closeModal('resetModal');
+        this.renderAll();
+    }
+}
+
+// Global initialization
+if (typeof window !== 'undefined') {
+    window.AquaTrackApp = AquaTrackApp;
+    window.DataStore = DataStore;
+
+    window.closeModal = function(id) {
+        if (window.app && window.app.closeModal) window.app.closeModal(id);
+        else {
+            var el = id ? document.getElementById(id) : document.querySelector('.modal-overlay.active');
+            if (el) { el.classList.remove('active'); el.style.display = 'none'; }
+        }
+    };
+
+    window.openModal = function(id) {
+        if (window.app && window.app.openModal) window.app.openModal(id);
+        else {
+            var el = document.getElementById(id);
+            if (el) { el.classList.add('active'); el.style.display = 'flex'; }
+        }
+    };
+
+    // Immediately instantiate if DOM is already loaded, or on DOMContentLoaded
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        window.app = new AquaTrackApp();
+    } else {
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!window.app) window.app = new AquaTrackApp();
+        });
+    }
+}

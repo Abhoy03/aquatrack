@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaTrack Pro — Dealership & Water Business ERP</title>
+    <meta name="description" content="Complete management system for water bottles, cold drinks dealership and 20L drum water company.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">💧</div>
+            <div class="brand-text">
+                <h1>AquaTrack</h1>
+                <span>Pro ERP</span>
+            </div>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-section="dashboard" id="nav-dashboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" class="nav-item" data-section="products" id="nav-products">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7L12 3L4 7M20 7L12 11M20 7V17L12 21M12 11L4 7M12 11V21M4 7V17L12 21"/></svg>
+                <span>Products & Stock</span>
+            </a>
+            <a href="#" class="nav-item" data-section="purchases" id="nav-purchases">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.707 15.293C4.077 15.923 4.523 17 5.414 17H17"/></svg>
+                <span>Factory Purchases</span>
+            </a>
+            <a href="#" class="nav-item" data-section="sales" id="nav-sales">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7C5.895 5 5 5.895 5 7V19C5 20.105 5.895 21 7 21H17C18.105 21 19 20.105 19 19V7C19 5.895 18.105 5 17 5H15M9 5C9 6.105 9.895 7 11 7H13C14.105 7 15 6.105 15 5M12 12H15M12 16H15M9 12H9.01M9 16H9.01"/></svg>
+                <span>Store Sales & Profit</span>
+            </a>
+            <a href="#" class="nav-item" data-section="drums" id="nav-drums">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5V19C4 20.657 7.582 22 12 22S20 20.657 20 19V5"/><path d="M4 12C4 13.657 7.582 15 12 15S20 13.657 20 12"/></svg>
+                <span>20L Drum Business</span>
+            </a>
+            <a href="#" class="nav-item" data-section="stores" id="nav-stores">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21H21M3 7V8C3 9.657 4.343 11 6 11S9 9.657 9 8M3 7L5 3H19L21 7M9 8C9 9.657 10.343 11 12 11S15 9.657 15 8M15 8C15 9.657 16.343 11 18 11S21 9.657 21 8V7M5 21V11M19 21V11"/></svg>
+                <span>Store Accounts (Khata)</span>
+            </a>
+            <a href="#" class="nav-item" data-section="staff" id="nav-staff">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <span>Drivers & Staff</span>
+            </a>
+            <a href="#" class="nav-item" data-section="daily" id="nav-daily">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3V21H21M7 14L11 10L15 14L20 8"/></svg>
+                <span>Daily P&L / Day Summary</span>
+            </a>
+            <a href="#" class="nav-item" data-section="analytics" id="nav-analytics">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21H3V3"/><path d="M18 9l-5 5-4-4-6 6"/><circle cx="18" cy="9" r="2"/><circle cx="13" cy="14" r="2"/><circle cx="9" cy="10" r="2"/></svg>
+                <span>Product Analytics</span>
+            </a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="quick-stats-mini">
+                <span>System Status</span>
+                <span class="badge badge-success">Online & Synced</span>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;" id="sidebarDate"></div>
+        </div>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <div class="main-wrapper">
+        <!-- Topbar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle" aria-label="Toggle Navigation">☰</button>
+                <div class="page-title">
+                    <h2 id="topbarTitle">Executive Dashboard</h2>
+                    <p id="topbarSubtitle">Overview of Stock, Come-In, Goes-Out, Sales, 20L Drums & Store Balances</p>
+                </div>
+            </div>
+            <div class="topbar-actions">
+                <button class="btn btn-primary btn-sm" id="topAddSaleBtn" onclick="app.openSaleModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5V19M5 12H19"/></svg>
+                    + New Sale
+                </button>
+                <button class="btn btn-success btn-sm" id="topAddPurchaseBtn" onclick="app.openPurchaseModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5V19M5 12H19"/></svg>
+                    + Buy Stock
+                </button>
+                <button class="btn btn-purple btn-sm" id="topAddDrumBtn" onclick="app.openDrumOrderModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5V19M5 12H19"/></svg>
+                    + Drum Order
+                </button>
+                <button class="btn btn-outline-danger btn-sm" id="resetAllBtn" onclick="app.openResetModal()" title="Reset all data to 0">🔄 Reset to 0</button>
+                <button class="icon-btn" id="themeToggle" onclick="app.toggleTheme()" title="Toggle Dark/Light Mode">🌙</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="content-container">
+            
+            <!-- SECTION 1: DASHBOARD -->
+            <section class="app-section active" id="section-dashboard">
+                <!-- Quick Banner -->
+                <div class="quick-banner">
+                    <div class="quick-banner-text">
+                        <h3>⚡ Quick Business Action Center</h3>
+                        <p>Instantly record factory stock arrivals, store deliveries, 20L drum dispatch, or store payments.</p>
+                    </div>
+                    <div class="quick-actions-btns">
+                        <button class="btn btn-primary btn-sm" onclick="app.openSaleModal()">+ Store Sale</button>
+                        <button class="btn btn-success btn-sm" onclick="app.openPurchaseModal()">+ Factory Inflow</button>
+                        <button class="btn btn-purple btn-sm" onclick="app.openDrumOrderModal()">+ 20L Drum Order</button>
+                        <button class="btn btn-secondary btn-sm" onclick="app.openStoreModal()">+ New Store</button>
+                    </div>
+                </div>
+
+                <!-- KPI Grid -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon green">💰</div>
+                        <div class="kpi-info">
+                            <h4>Today's Total Sales</h4>
+                            <div class="kpi-value" id="kpi-today-sales">₹0</div>
+                            <div class="kpi-sub"><span id="kpi-today-sales-count">0 transactions</span></div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon blue">📦</div>
+                        <div class="kpi-info">
+                            <h4>Today's Inflow Cost</h4>
+                            <div class="kpi-value" id="kpi-today-purchases">₹0</div>
+                            <div class="kpi-sub"><span id="kpi-today-purchases-count">Factory purchases</span></div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon amber">📈</div>
+                        <div class="kpi-info">
+                            <h4>Today's Net Profit</h4>
+                            <div class="kpi-value" id="kpi-today-profit" style="color: #10b981;">₹0</div>
+                            <div class="kpi-sub">Margin: <span id="kpi-today-margin">0%</span></div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon purple">💧</div>
+                        <div class="kpi-info">
+                            <h4>20L Drum Deliveries</h4>
+                            <div class="kpi-value" id="kpi-drum-status">0 / 0</div>
+                            <div class="kpi-sub"><span id="kpi-drum-sub">Delivered / Total Orders</span></div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon red">🏪</div>
+                        <div class="kpi-info">
+                            <h4>Total Store Balance Due</h4>
+                            <div class="kpi-value" id="kpi-store-due" style="color: #ef4444;">₹0</div>
+                            <div class="kpi-sub">Pending Store Receivables</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Today Come-in vs Goes-Out Visualizer -->
+                <div class="flow-grid">
+                    <div class="flow-card inflow">
+                        <div class="flow-header">
+                            <div class="flow-title">
+                                <span style="color: #38bdf8;">📥</span>
+                                <span>Today's Stock Inflow (Come-In)</span>
+                            </div>
+                            <span class="badge badge-info">Factory Arrivals</span>
+                        </div>
+                        <div class="flow-stat-grid">
+                            <div class="flow-stat-box">
+                                <div class="flow-stat-label">Water Bottles In</div>
+                                <div class="flow-stat-value" id="flow-in-water">0 Units per Box</div>
+                            </div>
+                            <div class="flow-stat-box">
+                                <div class="flow-stat-label">Cold Drinks In</div>
+                                <div class="flow-stat-value" id="flow-in-drinks">0 Units per Box</div>
+                            </div>
+                            <div class="flow-stat-box">
+                                <div class="flow-stat-label">Total Inflow Value</div>
+                                <div class="flow-stat-value" id="flow-in-val">₹0</div>
+                            </div>
+                            <div class="flow-stat-box">
+                                <div class="flow-stat-label">Factory Purchases</div>
+                                <div class="flow-stat-value" id="flow-in-count">0 Batches</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flow-card outflow">
+                        <div class="flow-header">
+                            <div class="flow-title">
+                                <span style="color: #10b981;">📤</span>
+                                <span>Today's Stock Outflow (Goes-Out)</span>
+                            </div>
+                            <span class="badge badge-success">Store Deliveries</span>
+                        </div>
+                        <div class="flow-stat-grid">
+                            <div class="flow-stat-box">
+                                <div class="flow-stat-label">Bottles & Drinks Sold</div>
+                                <div class="flow-stat-value" id="flow-out-units">0 Units per Box</div>
+                            </div>
+                            <div class="flow-stat-box">
+                                <div class="flow-stat-label">20L Drums Delivered</div>
+                                <div class="flow-stat-value" id="flow-out-drums">0 Drums</div>
+                            </div>
+                            <div class="flow-stat-box">
+                                <div class="flow-stat-label">Gross Revenue</div>
+                                <div class="flow-stat-value" id="flow-out-val">₹0</div>
+                            </div>
+                            <div class="flow-stat-box">
+                                <div class="flow-stat-label">Net Sales Profit</div>
+                                <div class="flow-stat-value" id="flow-out-profit" style="color: #10b981;">₹0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity Tables Grid -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span>📋</span>
+                            <span>Recent Store Sales & Profit</span>
+                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick="app.navigateTo('sales')">View All Sales →</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Store Name</th>
+                                    <th>Product Sold</th>
+                                    <th>Boxes & Units per Box</th>
+                                    <th>Sale Rate</th>
+                                    <th>Total Sale</th>
+                                    <th>Profit</th>
+                                    <th>Driver & Delivery Team</th>
+                                    <th>Payment</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboardRecentSales"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 2: PRODUCTS & STOCK -->
+            <section class="app-section" id="section-products">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span>📦</span>
+                            <span>Product Inventory & Stock Management</span>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-primary" onclick="app.openProductModal()">+ Add New Product</button>
+                        </div>
+                    </div>
+
+                    <div class="filter-bar">
+                        <div class="tab-group" id="productTabs">
+                            <button class="tab-btn active" data-cat="all" onclick="app.filterProducts('all')">All Items</button>
+                            <button class="tab-btn" data-cat="water" onclick="app.filterProducts('water')">Water Bottles (500ml/750ml/1L/2L)</button>
+                            <button class="tab-btn" data-cat="drinks" onclick="app.filterProducts('drinks')">Cold Drinks</button>
+                            <button class="tab-btn" data-cat="drums" onclick="app.filterProducts('drums')">20L Drums</button>
+                        </div>
+                        <div class="search-input-wrap">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21L16.65 16.65"/></svg>
+                            <input type="text" id="productSearch" placeholder="Search products..." oninput="app.renderProducts()">
+                        </div>
+                    </div>
+
+                    <div class="product-grid" id="productGrid"></div>
+                </div>
+            </section>
+
+            <!-- SECTION 3: PURCHASES (FACTORY INFLOW) -->
+            <section class="app-section" id="section-purchases">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span>🏭</span>
+                            <span>Factory Purchases (Stock Inflow)</span>
+                        </div>
+                        <button class="btn btn-success" onclick="app.openPurchaseModal()">+ Record Factory Purchase</button>
+                    </div>
+
+                    <div class="filter-bar">
+                        <div class="search-input-wrap">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21L16.65 16.65"/></svg>
+                            <input type="text" id="purchaseSearch" placeholder="Search by factory or product..." oninput="app.renderPurchases()">
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <label style="margin: 0;">Date Filter:</label>
+                            <input type="date" id="purchaseDateFilter" style="width: auto;" onchange="app.renderPurchases()">
+                            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('purchaseDateFilter').value=''; app.renderPurchases();">Clear</button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Factory / Supplier</th>
+                                    <th>Product Purchased</th>
+                                    <th>Boxes & Units per Box</th>
+                                    <th>Buy Rate</th>
+                                    <th>Total Cost</th>
+                                    <th>Batch / Notes</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="purchasesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 4: SALES & PROFIT -->
+            <section class="app-section" id="section-sales">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span>🛒</span>
+                            <span>Store Sales & Delivery Orders</span>
+                        </div>
+                        <button class="btn btn-primary" onclick="app.openSaleModal()">+ Record New Sale</button>
+                    </div>
+
+                    <div class="filter-bar">
+                        <div class="search-input-wrap">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21L16.65 16.65"/></svg>
+                            <input type="text" id="saleSearch" placeholder="Search by store, product, or driver..." oninput="app.renderSales()">
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <label style="margin: 0;">Date:</label>
+                            <input type="date" id="saleDateFilter" style="width: auto;" onchange="app.renderSales()">
+                            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('saleDateFilter').value=''; app.renderSales();">Clear</button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Store Name</th>
+                                    <th>Product Sold</th>
+                                    <th>Boxes & Units per Box</th>
+                                    <th>Sale Rate</th>
+                                    <th>Total Bill</th>
+                                    <th>Profit</th>
+                                    <th>Driver & Delivery Team</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 5: 20L DRUM BUSINESS -->
+            <section class="app-section" id="section-drums">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span>💧</span>
+                            <span>20L Water Drum Company — Pipeline & Deliveries</span>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-purple" onclick="app.openDrumOrderModal()">+ New 20L Drum Order</button>
+                        </div>
+                    </div>
+
+                    <div class="drum-summary-cards">
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Total Orders Today</div>
+                            <div class="flow-stat-value" id="drumTotalOrders">0 Drums</div>
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Delivered Today</div>
+                            <div class="flow-stat-value" id="drumDeliveredCount" style="color: #10b981;">0 Drums</div>
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Out for Delivery</div>
+                            <div class="flow-stat-value" id="drumInTransitCount" style="color: #38bdf8;">0 Drums</div>
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Pending Orders</div>
+                            <div class="flow-stat-value" id="drumPendingCount" style="color: #f59e0b;">0 Drums</div>
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Empty Drums with Stores</div>
+                            <div class="flow-stat-value" id="drumEmptyHolding" style="color: #c084fc;">0 Empties</div>
+                        </div>
+                    </div>
+
+                    <div class="filter-bar">
+                        <div class="tab-group" id="drumTabs">
+                            <button class="tab-btn active" onclick="app.filterDrums('all')">All Orders</button>
+                            <button class="tab-btn" onclick="app.filterDrums('Pending')">Pending</button>
+                            <button class="tab-btn" onclick="app.filterDrums('Out for Delivery')">Out for Delivery</button>
+                            <button class="tab-btn" onclick="app.filterDrums('Delivered')">Delivered</button>
+                        </div>
+                        <div class="search-input-wrap">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21L16.65 16.65"/></svg>
+                            <input type="text" id="drumSearch" placeholder="Search customer, store, or driver..." oninput="app.renderDrums()">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Store / Customer</th>
+                                    <th>Quantity</th>
+                                    <th>Rate / Drum</th>
+                                    <th>Total Amount</th>
+                                    <th>Driver & Helper</th>
+                                    <th>Empties Returned</th>
+                                    <th>Status</th>
+                                    <th>Update Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="drumsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 6: STORE ACCOUNTS & KHATA -->
+            <section class="app-section" id="section-stores">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span>🏪</span>
+                            <span>Store Accounts & Payment Ledger (Khata)</span>
+                        </div>
+                        <button class="btn btn-primary" onclick="app.openStoreModal()">+ Add New Store</button>
+                    </div>
+
+                    <div class="filter-bar">
+                        <div class="search-input-wrap">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21L16.65 16.65"/></svg>
+                            <input type="text" id="storeSearch" placeholder="Search store name, owner, phone..." oninput="app.renderStores()">
+                        </div>
+                    </div>
+
+                    <div class="store-grid" id="storesGrid"></div>
+                </div>
+            </section>
+
+            <!-- SECTION 7: DAILY P&L & BUSINESS SUMMARY -->
+            <section class="app-section" id="section-daily">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span>📊</span>
+                            <span>Daily Business P&L & Inflow / Outflow Audit</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <label style="margin: 0; font-weight: 600;">Select Date:</label>
+                            <input type="date" id="dailyReportDate" onchange="app.renderDailyReport()">
+                            <button class="btn btn-secondary btn-sm" onclick="app.setDailyReportToday()">Today</button>
+                            <button class="btn btn-primary btn-sm" onclick="window.print()">🖨️ Print Report</button>
+                        </div>
+                    </div>
+
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-icon blue">📥</div>
+                            <div class="kpi-info">
+                                <h4>Day Inflow (Factory Purchases)</h4>
+                                <div class="kpi-value" id="day-inflow-cost">₹0</div>
+                                <div class="kpi-sub" id="day-inflow-units">0 total items purchased</div>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon green">📤</div>
+                            <div class="kpi-info">
+                                <h4>Day Outflow (Gross Sales)</h4>
+                                <div class="kpi-value" id="day-outflow-revenue">₹0</div>
+                                <div class="kpi-sub" id="day-outflow-units">0 total items sold</div>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon amber">💵</div>
+                            <div class="kpi-info">
+                                <h4>Day Net Profit</h4>
+                                <div class="kpi-value" id="day-net-profit" style="color: #10b981;">₹0</div>
+                                <div class="kpi-sub" id="day-profit-margin">Profit Margin: 0%</div>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon purple">💳</div>
+                            <div class="kpi-info">
+                                <h4>Payments Collected Today</h4>
+                                <div class="kpi-value" id="day-payments-collected">₹0</div>
+                                <div class="kpi-sub" id="day-payments-count">0 payment receipts</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category Profit Breakdown -->
+                    <div class="card" style="background: rgba(0,0,0,0.15); margin-bottom: 20px;">
+                        <h4 style="margin-bottom: 14px; font-size: 1rem;">🎯 Profit Breakdown by Product Line</h4>
+                        <div class="flow-stat-grid">
+                            <div class="flow-stat-box">
+                                <div class="flow-stat-label">Water Bottles (500ml/750ml/1L/2L)</div>
+                                <div class="flow-stat-value" id="day-profit-water" style="color: #38bdf8;">₹0</div>
+                            </div>
+                            <div class="flow-stat-box">
+                                <div class="flow-stat-label">Cold Drinks & Beverages</div>
+                                <div class="flow-stat-value" id="day-profit-drinks" style="color: #f59e0b;">₹0</div>
+                            </div>
+                            <div class="flow-stat-box">
+                                <div class="flow-stat-label">20L Drum Water Business</div>
+                                <div class="flow-stat-value" id="day-profit-drums" style="color: #c084fc;">₹0</div>
+                            </div>
+                            <div class="flow-stat-box">
+                                <div class="flow-stat-label">Total Day Gross Profit</div>
+                                <div class="flow-stat-value" id="day-profit-total" style="color: #10b981;">₹0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Day Transaction Log -->
+                    <h4 style="margin: 16px 0 10px 0; font-size: 1rem;">📝 Day Transaction Log</h4>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Entity / Store / Factory</th>
+                                    <th>Item Details</th>
+                                    <th>Qty</th>
+                                    <th>Rate</th>
+                                    <th>Total Amount</th>
+                                    <th>Profit</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dayTransactionsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 8: DRIVERS & STAFF -->
+            <section class="app-section" id="section-staff">
+                <div class="card" style="margin-bottom: 20px;">
+                    <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
+                        <div class="card-title">
+                            <span>🚚</span>
+                            <span>Drivers & Staff Salary Management</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.25); padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                                <label style="margin: 0; font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">📅 Month:</label>
+                                <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 8px;" onclick="app.prevStaffMonth()">◀</button>
+                                <select id="staffSectionMonthSelect" onchange="app.onStaffSectionMonthChange()" style="width: auto; padding: 4px 8px; font-weight: 700; color: #38bdf8; background: transparent; border: none; font-size: 0.88rem; cursor: pointer;">
+                                </select>
+                                <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 8px;" onclick="app.nextStaffMonth()">▶</button>
+                            </div>
+                            <button class="btn btn-primary" onclick="app.openStaffModal()">+ Add New Staff</button>
+                        </div>
+                    </div>
+
+                    <!-- Staff KPI Overview for Selected Month -->
+                    <div class="flow-stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 16px;">
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Total Active Staff</div>
+                            <div class="flow-stat-value" id="staff-kpi-count" style="color: #38bdf8;">0 Staff</div>
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Month Fixed Salaries</div>
+                            <div class="flow-stat-value" id="staff-kpi-fixed">₹0</div>
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Earned Commissions (₹2/box Driver, ₹1/box Helper)</div>
+                            <div class="flow-stat-value" id="staff-kpi-comm" style="color: #10b981;">₹0</div>
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Total Advances Deducted</div>
+                            <div class="flow-stat-value" id="staff-kpi-adv" style="color: #f87171;">₹0</div>
+                        </div>
+                        <div class="flow-stat-box" style="border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.08);">
+                            <div class="flow-stat-label" style="color: #10b981;">Total Net Payable This Month</div>
+                            <div class="flow-stat-value" id="staff-kpi-net" style="color: #10b981; font-weight: 800;">₹0</div>
+                        </div>
+                    </div>
+
+                    <div class="filter-bar" style="margin-bottom: 14px;">
+                        <div class="tab-group" id="staffTabs">
+                            <button class="tab-btn active" onclick="app.filterStaff('all')">All Staff</button>
+                            <button class="tab-btn" onclick="app.filterStaff('Driver')">Drivers (₹2/box)</button>
+                            <button class="tab-btn" onclick="app.filterStaff('Helper')">Helpers (₹1/box)</button>
+                        </div>
+                    </div>
+
+                    <!-- Comprehensive Monthly Salary Structure Table -->
+                    <h4 style="margin: 14px 0 8px 0; font-size: 0.95rem; color: #38bdf8; display: flex; align-items: center; justify-content: space-between;">
+                        <span>📋 Staff Monthly Salary Structure & Payout Table</span>
+                        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 400;">(Net Payable = Fixed + Commission + Extra - Advance)</span>
+                    </h4>
+                    <div class="table-responsive" style="margin-bottom: 24px;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Staff Name</th>
+                                    <th>Role</th>
+                                    <th>Base Salary</th>
+                                    <th>Month Fixed (₹)</th>
+                                    <th>Commission (₹)</th>
+                                    <th>Extra (₹)</th>
+                                    <th>Advance (₹)</th>
+                                    <th>Net Payable (₹)</th>
+                                    <th>Paid (₹)</th>
+                                    <th>Balance (₹)</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="staffSalaryTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Staff Cards Grid -->
+                    <h4 style="margin: 10px 0 8px 0; font-size: 0.95rem; color: #818cf8;">
+                        <span>🪪 Staff Quick Overview & Delivery Cards</span>
+                    </h4>
+                    <div class="staff-grid" id="staffGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-top: 8px;"></div>
+                </div>
+            </section>
+
+            <!-- SECTION 9: PRODUCT ANALYTICS & DEMAND INTELLIGENCE -->
+            <section class="app-section" id="section-analytics">
+                
+                <!-- Top Key Intelligence Highlights -->
+                <div class="analytics-hero-banner" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 22px 24px; margin-bottom: 22px; box-shadow: var(--shadow-md);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 18px;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 1.6rem;">📊</span>
+                                <h3 style="font-size: 1.35rem; font-weight: 800; margin: 0; background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                                    Product Demand & Sales Intelligence Dashboard
+                                </h3>
+                            </div>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">
+                                Real-time velocity tracking, long-run champions, market breadth & single-product store breakdown.
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button class="btn btn-secondary btn-sm" onclick="app.renderAnalytics()" title="Refresh Analytics">🔄 Refresh Metrics</button>
+                        </div>
+                    </div>
+
+                    <!-- 5 Key Intelligence Quick Metric Cards -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;" id="analyticsQuickMetrics">
+                        <!-- Rendered dynamically by JS -->
+                    </div>
+                </div>
+
+                <!-- 4-Quadrant Visual Categorization Grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 18px; margin-bottom: 24px;">
+                    
+                    <!-- QUADRANT 1: ⚡ FAST-SELLING VELOCITY (Quick after restock) -->
+                    <div class="card" style="margin-bottom: 0; border-top: 4px solid #f59e0b;">
+                        <div class="card-header" style="margin-bottom: 12px;">
+                            <div class="card-title" style="font-size: 1.05rem;">
+                                <span>⚡ Fast-Selling After Restock</span>
+                            </div>
+                            <span class="badge badge-warning" id="analyticsFastCount">Top Velocity</span>
+                        </div>
+                        <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: -6px; margin-bottom: 12px;">
+                            Products that sell out the quickest after factory purchase restocks (High Turnaround Speed).
+                        </p>
+                        <div id="analyticsFastVelocityList" style="display: flex; flex-direction: column; gap: 10px;">
+                            <!-- Rendered dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- QUADRANT 2: 🏆 LONG-RUN EVERGREEN LEADERS -->
+                    <div class="card" style="margin-bottom: 0; border-top: 4px solid #10b981;">
+                        <div class="card-header" style="margin-bottom: 12px;">
+                            <div class="card-title" style="font-size: 1.05rem;">
+                                <span>🏆 Long-Run Champions</span>
+                            </div>
+                            <span class="badge badge-success" id="analyticsLongRunCount">Top Volume</span>
+                        </div>
+                        <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: -6px; margin-bottom: 12px;">
+                            Evergreen products generating the highest cumulative volume, total boxes sold & steady repeat income.
+                        </p>
+                        <div id="analyticsLongRunList" style="display: flex; flex-direction: column; gap: 10px;">
+                            <!-- Rendered dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- QUADRANT 3: 🌐 HIGHEST STORE PENETRATION (Consumed by Most Stores) -->
+                    <div class="card" style="margin-bottom: 0; border-top: 4px solid #38bdf8;">
+                        <div class="card-header" style="margin-bottom: 12px;">
+                            <div class="card-title" style="font-size: 1.05rem;">
+                                <span>🌐 Widest Store Reach (Most Stores)</span>
+                            </div>
+                            <span class="badge badge-info" id="analyticsReachCount">Mass Adoption</span>
+                        </div>
+                        <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: -6px; margin-bottom: 12px;">
+                            Products ordered by the highest number of unique stores across your distribution network.
+                        </p>
+                        <div id="analyticsStoreReachList" style="display: flex; flex-direction: column; gap: 10px;">
+                            <!-- Rendered dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- QUADRANT 4: 🎯 HIGH-VOLUME BULK NICHE (Few Stores, High Numbers) -->
+                    <div class="card" style="margin-bottom: 0; border-top: 4px solid #a855f7;">
+                        <div class="card-header" style="margin-bottom: 12px;">
+                            <div class="card-title" style="font-size: 1.05rem;">
+                                <span>🎯 High-Volume Niche (Bulk Buyers)</span>
+                            </div>
+                            <span class="badge badge-purple" id="analyticsNicheCount">Concentrated Bulk</span>
+                        </div>
+                        <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: -6px; margin-bottom: 12px;">
+                            Products bought by fewer selective stores, but in very high quantities per store (Bulk Demand).
+                        </p>
+                        <div id="analyticsNicheList" style="display: flex; flex-direction: column; gap: 10px;">
+                            <!-- Rendered dynamically -->
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- SECTION: INTERACTIVE SINGLE PRODUCT DEEP-DIVE -->
+                <div class="card" style="border: 1px solid rgba(56, 189, 248, 0.35); background: rgba(15, 23, 42, 0.85); box-shadow: var(--shadow-lg);">
+                    <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
+                        <div>
+                            <div class="card-title" style="font-size: 1.2rem; color: #38bdf8;">
+                                <span>🔍 Single Product Performance Deep-Dive</span>
+                            </div>
+                            <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px;">
+                                Select any product from the dropdown to inspect its exact consumption history, store distribution & profit breakdown.
+                            </p>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px; min-width: 280px;">
+                            <label style="font-size: 0.85rem; font-weight: 700; white-space: nowrap; color: #f8fafc;">📦 Choose Product:</label>
+                            <select id="analyticsProductSelect" onchange="app.onAnalyticsProductChange()" style="font-weight: 700; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4); padding: 8px 12px;"></select>
+                        </div>
+                    </div>
+
+                    <!-- Selected Product Interactive Dashboard Display -->
+                    <div id="analyticsProductDetailView" style="margin-top: 18px;">
+                        <!-- Rendered dynamically by JS -->
+                    </div>
+                </div>
+
+                <!-- SECTION: STORE & LOCATION DEMAND MATRIX -->
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">
+                                <span>📍 Store & Location Demand Matrix</span>
+                            </div>
+                            <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px;">
+                                Identifies which store and location is demanding which specific products most heavily.
+                            </p>
+                        </div>
+                        <div class="search-input-wrap" style="max-width: 280px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21L16.65 16.65"/></svg>
+                            <input type="text" id="analyticsStoreSearch" placeholder="Search store or location..." oninput="app.renderStoreDemandMatrix()">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Store Name & Location</th>
+                                    <th>Primary Favorite Product</th>
+                                    <th>Secondary Products</th>
+                                    <th>Total Boxes Demanded</th>
+                                    <th>Total Billings (₹)</th>
+                                    <th>Demand Intensity</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analyticsStoreMatrixBody">
+                                <!-- Rendered dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </section>
+
+        </main>
+    </div>
+
+    <!-- MODAL 1: ADD / EDIT PRODUCT -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="modal-title" id="productModalTitle">Add New Product</h3>
+                <button class="close-btn" onclick="app.closeModal('productModal')">&times;</button>
+            </div>
+            <form id="productForm">
+                <input type="hidden" id="productId">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Category *</label>
+                        <select id="productCategory" required onchange="app.onProductCategoryChange()">
+                            <option value="water">Packaged Drinking Water Bottle</option>
+                            <option value="drinks">Cold Drink / Beverage</option>
+                            <option value="drums">20L Drum Water</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Product Name * (e.g., Bisleri, Aquafina, Thums Up, Sprite)</label>
+                        <input type="text" id="productName" placeholder="e.g. PureAqua Water" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Size / Variant *</label>
+                            <input type="text" id="productSize" placeholder="e.g. 500ml, 750ml, 1L, 2L, 20L" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Pack Size (Units per Box / Bottles per Box) *</label>
+                            <input type="number" id="productUnitsPerBox" min="1" value="24" placeholder="e.g. 24" required oninput="app.calcProductStockFromBoxes()">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Initial Stock in Boxes</label>
+                            <input type="number" id="productStockBoxes" min="0" value="10" placeholder="e.g. 10" oninput="app.calcProductStockFromBoxes()">
+                        </div>
+                        <div class="form-group">
+                            <label>Total Initial Stock (Units per Box/Bottles) *</label>
+                            <input type="number" id="productStock" min="0" value="240" required oninput="app.calcProductStockFromUnits()">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Factory Buy Cost (₹ / Unit) *</label>
+                            <input type="number" step="0.01" id="productBuyPrice" placeholder="5.50" required oninput="app.calcProductProfit()">
+                        </div>
+                        <div class="form-group">
+                            <label>Store Selling Rate (₹ / Unit) *</label>
+                            <input type="number" step="0.01" id="productSellPrice" placeholder="10.00" required oninput="app.calcProductProfit()">
+                        </div>
+                    </div>
+                    <div class="calc-preview-card" style="display: flex; flex-direction: column; gap: 4px; align-items: stretch;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span class="label">Profit Per Unit (Bottle):</span>
+                            <span class="val" id="productProfitPreview" style="font-size: 1.1rem;">₹4.50</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-top: 1px dashed rgba(56, 189, 248, 0.3); padding-top: 4px;">
+                            <span class="label" style="color: #a5b4fc;">📦 Profit Per Box (<span id="productUnitsPerBoxLabel">24</span> Units per Box):</span>
+                            <span class="val" id="productBoxProfitPreview" style="font-size: 1.1rem; color: #a5b4fc;">₹108.00</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('productModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: FACTORY PURCHASE (INFLOW) -->
+    <div class="modal-overlay" id="purchaseModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="modal-title">Record Factory Purchase (Stock Inflow)</h3>
+                <button class="close-btn" onclick="app.closeModal('purchaseModal')">&times;</button>
+            </div>
+            <form id="purchaseForm">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Purchase Date *</label>
+                            <input type="date" id="purchaseDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Factory / Supplier Name *</label>
+                            <input type="text" id="purchaseFactory" placeholder="e.g. National Bottling Plant" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Select Product *</label>
+                        <select id="purchaseProduct" required onchange="app.onPurchaseProductChange()"></select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Boxes Purchased</label>
+                            <input type="number" min="0" step="any" id="purchaseBoxCount" placeholder="e.g. 20" oninput="app.onPurchaseBoxInput()">
+                        </div>
+                        <div class="form-group">
+                            <label>Total Units per Box Purchased *</label>
+                            <input type="number" min="1" id="purchaseQty" placeholder="e.g. 480" required oninput="app.onPurchaseUnitInput()">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Unit Buy Cost (₹ / Unit) *</label>
+                            <input type="number" step="0.01" id="purchaseRate" required oninput="app.calcPurchaseTotal()">
+                        </div>
+                        <div class="form-group">
+                            <label>Rate Per Box (₹ / Box)</label>
+                            <input type="number" step="0.01" id="purchaseBoxRate" placeholder="Auto" oninput="app.onPurchaseBoxRateInput()">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes / Batch # / Delivery Driver Info</label>
+                        <input type="text" id="purchaseNotes" placeholder="e.g. Batch #409, Truck Delivery Driver: Ramesh">
+                    </div>
+                    <div class="calc-preview-card">
+                        <div class="label">Total Factory Payment</div>
+                        <div class="val" id="purchaseTotalPreview">₹0.00</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('purchaseModal')">Cancel</button>
+                    <button type="submit" class="btn btn-success">Record Inflow & Add Stock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: STORE SALE (OUTFLOW & PROFIT) -->
+    <div class="modal-overlay" id="saleModal">
+        <div class="modal-box large">
+            <div class="modal-header">
+                <h3 class="modal-title">Record Store Sale / Delivery (Stock Outflow)</h3>
+                <button class="close-btn" onclick="app.closeModal('saleModal')">&times;</button>
+            </div>
+            <form id="saleForm">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Sale Date *</label>
+                            <input type="date" id="saleDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Target Store / Retailer *</label>
+                            <select id="saleStore" required onchange="app.onSaleStoreChange()"></select>
+                        </div>
+                    </div>
+
+                    <!-- DRIVER & DELIVERY TEAM SECTION -->
+                    <div class="driver-section-box">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <label style="font-size: 0.85rem; font-weight: 700; color: #818cf8; margin: 0;">
+                                🚚 Order Delivery Team / Driver Information
+                            </label>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="app.addHelperRow()">+ Add Helper</button>
+                        </div>
+                        <div class="form-row" id="driverRowsContainer">
+                            <div class="form-group">
+                                <label>Driver (Primary)</label>
+                                <input type="text" id="saleDriver1" list="staffList" placeholder="Select or type driver name">
+                            </div>
+                            <div class="form-group helper-group">
+                                <label>Helper 1</label>
+                                <div style="display:flex; gap: 5px;">
+                                    <input type="text" class="saleHelperInput" id="saleDriver2" list="staffList" placeholder="Select or type helper name">
+                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="this.parentElement.parentElement.remove()" style="padding: 0 8px;">×</button>
+                                </div>
+                            </div>
+                        </div>
+                        <datalist id="staffList">
+                            <option value="Rajesh Kumar"></option>
+                            <option value="Suresh Patel"></option>
+                            <option value="Mukesh"></option>
+                            <option value="Sonu"></option>
+                            <option value="Vikas Yadav"></option>
+                            <option value="Anand"></option>
+                        </datalist>
+                    </div>
+
+                    <div class="store-order-box" style="margin-top: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <div>
+                                <label style="font-size: 0.92rem; font-weight: 700; color: #38bdf8; margin: 0;">📦 Products Ordered (Boxes & Units per Box)</label>
+                                <div style="font-size: 0.78rem; color: var(--text-muted);">Enter Box Count or Units per Box — calculations auto-sync automatically!</div>
+                            </div>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="app.addSaleItemRow()">+ Add Product</button>
+                        </div>
+
+                        <div class="order-items-list" id="saleOrderItemsList">
+                            <!-- Dynamic Sale Rows -->
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px;">
+                        <div class="calc-preview-card">
+                            <div class="label">Total Sale Amount</div>
+                            <div class="val" id="saleTotalPreview">₹0.00</div>
+                        </div>
+
+                        <div class="calc-preview-card" style="background: rgba(16, 185, 129, 0.12); border-color: var(--success);">
+                            <div class="label" style="color: #10b981;">💰 Total Profit</div>
+                            <div class="val" id="saleProfitPreview" style="color: #10b981;">₹0.00</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Payment Mode</label>
+                        <select id="salePaymentStatus" onchange="app.onSalePaymentStatusChange()">
+                            <option value="Paid">Fully Paid (Cash/UPI/Bank)</option>
+                            <option value="Partial">Partial Payment (Part Paid, Part Credit)</option>
+                            <option value="Credit" selected>Full Credit / Due (Add to Store Khata)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="salePaidAmountGroup" style="display: none;">
+                        <label>Amount Paid Now (₹)</label>
+                        <input type="number" step="0.01" id="salePaidAmount" placeholder="0.00">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('saleModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Complete Sale & Deduct Stock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 4: 20L DRUM ORDER -->
+    <div class="modal-overlay" id="drumOrderModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="modal-title">New 20L Water Drum Order</h3>
+                <button class="close-btn" onclick="app.closeModal('drumOrderModal')">&times;</button>
+            </div>
+            <form id="drumOrderForm">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Order Date *</label>
+                            <input type="date" id="drumDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Store / Customer Name *</label>
+                            <select id="drumStoreSelect" onchange="app.onDrumStoreChange()">
+                                <option value="">-- Select Store or Walk-in Customer --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" id="drumCustomCustomerGroup">
+                        <label>Or Enter Custom Customer Name / Address</label>
+                        <input type="text" id="drumCustomerName" placeholder="e.g. Apex Hospital, Room 302">
+                    </div>
+
+                    <!-- DRIVER SECTION FOR DRUMS -->
+                    <div class="driver-section-box">
+                        <label style="font-size: 0.82rem; font-weight: 700; color: #818cf8; margin-bottom: 6px; display: block;">
+                            🚚 Delivery Team / Drivers
+                        </label>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Driver 1 (Primary Driver)</label>
+                                <input type="text" id="drumDriver1" placeholder="e.g. Vikas Yadav">
+                            </div>
+                            <div class="form-group">
+                                <label>Driver 2 (Helper / Assistant)</label>
+                                <input type="text" id="drumDriver2" placeholder="e.g. Sonu (Helper)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Number of 20L Drums *</label>
+                            <input type="number" min="1" id="drumQty" value="5" required oninput="app.calcDrumTotal()">
+                        </div>
+                        <div class="form-group">
+                            <label>Rate Per 20L Drum (₹) *</label>
+                            <input type="number" step="0.01" id="drumRate" value="35.00" required oninput="app.calcDrumTotal()">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Empty Drums Collected Back</label>
+                            <input type="number" min="0" id="drumEmptiesReturned" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Delivery Status</label>
+                            <select id="drumStatus">
+                                <option value="Pending">Pending Dispatch</option>
+                                <option value="Out for Delivery">Out for Delivery</option>
+                                <option value="Delivered" selected>Delivered</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="calc-preview-card">
+                        <div class="label">Total Order Amount</div>
+                        <div class="val" id="drumTotalPreview">₹175.00</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('drumOrderModal')">Cancel</button>
+                    <button type="submit" class="btn btn-purple">Save Drum Order</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 5: ADD / EDIT STORE -->
+    <div class="modal-overlay" id="storeModal">
+        <div class="modal-box large">
+            <div class="modal-header">
+                <h3 class="modal-title" id="storeModalTitle">Add New Store</h3>
+                <button class="close-btn" onclick="app.closeModal('storeModal')">&times;</button>
+            </div>
+            <form id="storeForm">
+                <input type="hidden" id="storeId">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Store / Shop Name *</label>
+                        <input type="text" id="storeName" placeholder="e.g. Krishna Supermarket" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Owner / Manager Name</label>
+                            <input type="text" id="storeOwner" placeholder="e.g. Rajesh Sharma">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number *</label>
+                            <input type="text" id="storePhone" placeholder="e.g. 9876543210" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Shop Address / Area</label>
+                        <textarea id="storeAddress" rows="2" placeholder="e.g. Shop 14, Main Market Road"></textarea>
+                    </div>
+                    <div class="form-group" id="storeOpeningBalanceGroup">
+                        <label>Opening Outstanding Balance Due (₹) (if any previous balance)</label>
+                        <input type="number" step="0.01" id="storeOpeningBalance" value="0.00">
+                    </div>
+
+                    <!-- ASSIGNED DRIVER & DELIVERY TEAM SECTION -->
+                    <div class="driver-section-box">
+                        <label style="font-size: 0.85rem; font-weight: 700; color: #818cf8; margin-bottom: 8px; display: block;">
+                            🚚 Assigned Driver & Delivery Team for this Store (2 Persons)
+                        </label>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Driver 1 (Primary Driver Name & Contact)</label>
+                                <input type="text" id="storeDriver1" placeholder="e.g. Ramesh Kumar">
+                            </div>
+                            <div class="form-group">
+                                <label>Driver 2 (Delivery Helper / Assistant Name)</label>
+                                <input type="text" id="storeDriver2" placeholder="e.g. Mukesh (Helper)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- INITIAL PURCHASE / STOCK DELIVERY SECTION -->
+                    <div class="store-order-box" id="storeInitialOrderSection">
+                        <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px; margin-bottom: 8px;">
+                            <input type="checkbox" id="storeAddInitialOrder" onchange="app.toggleStoreInitialOrder()" style="width: 20px; height: 20px; cursor: pointer;">
+                            <label for="storeAddInitialOrder" style="cursor: pointer; font-size: 0.95rem; font-weight: 700; color: #38bdf8; margin: 0;">
+                                🛒 Record Initial Purchase / Order Now (Auto-Deducts from Stock)
+                            </label>
+                        </div>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0 0 10px 30px;">
+                            Enter box count or Units per Box for 500ml and other products. Stock will automatically be deducted from inventory.
+                        </p>
+
+                        <div id="storeOrderItemsContainer" style="display: none;">
+                            <div class="order-items-list" id="storeOrderItemsList">
+                                <!-- Dynamic initial order rows -->
+                            </div>
+                            <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="app.addStoreInitialOrderItemRow()">
+                                    + Add Another Product
+                                </button>
+                                <span style="font-size: 0.8rem; color: #10b981; font-weight: 600;">
+                                    ⚡ Automatic box & unit stock deduction for every item
+                                </span>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
+                                <div class="calc-preview-card">
+                                    <div class="label">Total Order Billing</div>
+                                    <div class="val" id="storeInitialOrderTotalPreview">₹0.00</div>
+                                </div>
+                                <div class="calc-preview-card" style="background: rgba(16, 185, 129, 0.12); border-color: var(--success);">
+                                    <div class="label" style="color: #10b981;">💰 Estimated Profit</div>
+                                    <div class="val" id="storeInitialOrderProfitPreview" style="color: #10b981;">₹0.00</div>
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-top: 12px;">
+                                <label>Payment Mode for This Order</label>
+                                <select id="storeInitialOrderPaymentStatus" onchange="app.onStoreInitialOrderPaymentChange()">
+                                    <option value="Paid">Fully Paid (Cash/UPI/Bank)</option>
+                                    <option value="Partial">Partial Payment (Part Paid, Part Credit)</option>
+                                    <option value="Credit" selected>Full Credit / Due (Add to Store Khata Balance)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="storeInitialOrderPaidAmountGroup" style="display: none;">
+                                <label>Amount Paid Now (₹)</label>
+                                <input type="number" step="0.01" id="storeInitialOrderPaidAmount" placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('storeModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Store & Update Stock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 6: RECORD STORE PAYMENT -->
+    <div class="modal-overlay" id="paymentModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="modal-title">Record Store Payment (Khata Settlement)</h3>
+                <button class="close-btn" onclick="app.closeModal('paymentModal')">&times;</button>
+            </div>
+            <form id="paymentForm">
+                <input type="hidden" id="paymentStoreId">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Store Name</label>
+                        <input type="text" id="paymentStoreName" readonly style="opacity: 0.8;">
+                    </div>
+                    <div class="calc-preview-card" style="border-color: var(--danger);">
+                        <div class="label" style="color: #f87171;">Current Balance Due</div>
+                        <div class="val" id="paymentCurrentDue" style="color: #ef4444;">₹0.00</div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Payment Date *</label>
+                            <input type="date" id="paymentDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Amount Paid (₹) *</label>
+                            <input type="number" step="0.01" id="paymentAmount" placeholder="e.g. 1000" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Payment Mode / Reference</label>
+                        <input type="text" id="paymentNote" placeholder="e.g. GPay UPI / Cash / Cheque #8821">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('paymentModal')">Cancel</button>
+                    <button type="submit" class="btn btn-success">Confirm Payment Receipt</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 7: STORE STATEMENT / FULL LEDGER -->
+    <div class="modal-overlay" id="statementModal">
+        <div class="modal-box large">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title" id="statementStoreName">Store Khata Statement</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary);" id="statementStoreDetails"></p>
+                </div>
+                <button class="close-btn" onclick="app.closeModal('statementModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="flow-stat-grid" style="grid-template-columns: repeat(3, 1fr);">
+                    <div class="flow-stat-box">
+                        <div class="flow-stat-label">Total Purchased (Billings)</div>
+                        <div class="flow-stat-value" id="statementTotalBought">₹0.00</div>
+                    </div>
+                    <div class="flow-stat-box">
+                        <div class="flow-stat-label">Total Amount Paid</div>
+                        <div class="flow-stat-value" id="statementTotalPaid" style="color: #10b981;">₹0.00</div>
+                    </div>
+                    <div class="flow-stat-box">
+                        <div class="flow-stat-label">Outstanding Balance Left</div>
+                        <div class="flow-stat-value" id="statementBalanceDue" style="color: #ef4444;">₹0.00</div>
+                    </div>
+                </div>
+
+                <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Description / Item</th>
+                                <th>Debit (Bought ₹)</th>
+                                <th>Credit (Paid ₹)</th>
+                                <th>Balance Left (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="statementTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer" style="justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-purple btn-sm" onclick="app.openSaleFromStatement()">🛒 + New Order / Sell Products</button>
+                    <button class="btn btn-primary btn-sm" id="statementPayBtn" onclick="app.openPaymentFromStatement()">+ Record Payment</button>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨️ Print Statement</button>
+                    <button class="btn btn-secondary btn-sm" onclick="app.closeModal('statementModal')">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- MODAL 8: RESET DATA TO ZERO -->
+    <div class="modal-overlay" id="resetModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: #ef4444;">⚠️ Reset All Data to Zero</h3>
+                <button class="close-btn" onclick="app.closeModal('resetModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.95rem; line-height: 1.6;">
+                    Choose how you would like to reset your system to <strong>0</strong>:
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+                    <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 14px;">
+                        <h4 style="color: #f87171; font-size: 0.95rem; margin-bottom: 4px;">Option 1: Clean Fresh Start (Recommended)</h4>
+                        <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 10px;">
+                            Keeps your product catalog & stores, but sets <strong>all stock to 0</strong>, clears all sales, purchases, 20L drum orders, payments, and resets store khata balances to <strong>₹0</strong>.
+                        </p>
+                        <button class="btn btn-primary btn-sm" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); width: 100%;" onclick="app.resetDataToZero(false)">
+                            Set All Stock, Sales, Dues & Profits to 0
+                        </button>
+                    </div>
+
+                    <div style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+                        <h4 style="font-size: 0.95rem; margin-bottom: 4px;">Option 2: Blank Slate (Wipe Everything)</h4>
+                        <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 10px;">
+                            Completely clears everything (products, stores, sales, purchases, and orders) so you can enter everything brand new.
+                        </p>
+                        <button class="btn btn-secondary btn-sm" style="width: 100%; border-color: var(--danger); color: var(--danger);" onclick="app.resetDataToZero(true)">
+                            Wipe Entire Database (100% Blank)
+                        </button>
+                    </div>
+
+                    <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 14px;">
+                        <h4 style="color: #10b981; font-size: 0.95rem; margin-bottom: 4px;">Option 3: Reload Sample Demo Data</h4>
+                        <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 10px;">
+                            Reloads realistic sample products, stores, sales, and drum orders for demonstration purposes.
+                        </p>
+                        <button class="btn btn-success btn-sm" style="width: 100%;" onclick="app.reloadSeedData()">
+                            Reload Demo Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="app.closeModal('resetModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD / EDIT STAFF -->
+    <div class="modal-overlay" id="staffModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="modal-title" id="staffModalTitle">Add New Staff</h3>
+                <button class="close-btn" onclick="app.closeModal('staffModal')">&times;</button>
+            </div>
+            <form id="staffForm">
+                <input type="hidden" id="staffId">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Name *</label>
+                        <input type="text" id="staffName" required placeholder="e.g. MANTU">
+                    </div>
+                    <div class="form-group">
+                        <label>Role *</label>
+                        <select id="staffRole" required>
+                            <option value="Driver">Driver</option>
+                            <option value="Helper">Helper</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Monthly Fixed Salary (₹) *</label>
+                        <input type="number" id="staffFixedSalary" min="0" required value="0">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('staffModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Staff</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: STAFF LEDGER (COMMISSIONS & SALARY) -->
+    <div class="modal-overlay" id="staffLedgerModal">
+        <div class="modal-box large">
+            <div class="modal-header">
+                <h3 class="modal-title" id="staffLedgerTitle">Staff Salary & Ledger</h3>
+                <button class="close-btn" onclick="app.closeModal('staffLedgerModal')">&times;</button>
+            </div>
+            <div class="modal-body" style="background: var(--bg-dark); gap: 16px;">
+                <input type="hidden" id="ledgerStaffId">
+                
+                <!-- Month Switcher for Ledger Modal -->
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.88rem; font-weight: 700; color: #38bdf8;">📅 Select Salary Month:</span>
+                        <select id="ledgerMonthSelect" onchange="app.onLedgerMonthChange()" style="width: auto; padding: 4px 10px; font-weight: 700;"></select>
+                    </div>
+                    <div id="ledgerRoleBadge"></div>
+                </div>
+
+                <!-- Live Salary Structure Cards for Selected Month -->
+                <div class="staff-salary-summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;">
+                    <div class="flow-stat-box">
+                        <div class="flow-stat-label">Fixed Salary (₹)</div>
+                        <input type="number" id="ledgerFixedSalaryInput" style="width: 100%; margin-top: 4px; padding: 6px; font-weight: 700; font-size: 1rem;" oninput="app.calcStaffLedgerTotals()">
+                    </div>
+                    <div class="flow-stat-box">
+                        <div class="flow-stat-label">Earned Commission</div>
+                        <div class="flow-stat-value" id="ledgerCommission" style="color:#10b981; font-size: 1.15rem; margin-top: 6px;">₹0</div>
+                        <div style="font-size: 0.72rem; color: var(--text-muted);" id="ledgerCommissionBoxes">0 boxes delivered</div>
+                    </div>
+                    <div class="flow-stat-box">
+                        <div class="flow-stat-label">Advance Salary (Deduction)</div>
+                        <input type="number" id="ledgerAdvSalary" placeholder="0" style="width: 100%; margin-top: 4px; padding: 6px; color: #f87171;" oninput="app.calcStaffLedgerTotals()">
+                    </div>
+                    <div class="flow-stat-box">
+                        <div class="flow-stat-label">Extra Income / Bonus</div>
+                        <input type="number" id="ledgerExtraIncome" placeholder="0" style="width: 100%; margin-top: 4px; padding: 6px; color: #38bdf8;" oninput="app.calcStaffLedgerTotals()">
+                    </div>
+                </div>
+                
+                <!-- Net Payable Banner -->
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(16, 185, 129, 0.12); padding: 14px 18px; border-radius: 8px; border: 1px solid var(--success);">
+                    <div>
+                        <h4 style="margin:0; color:#10b981; font-size:1.15rem;">Net Payable for This Month</h4>
+                        <div style="font-size:0.8rem; color:var(--text-muted);">(Fixed Salary + Commission + Extra Income - Advance Salary)</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div id="ledgerNetPayable" style="font-size: 1.6rem; font-weight: 800; color: #10b981;">₹0.00</div>
+                    </div>
+                </div>
+
+                <!-- Salary Payout Entry -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #a5b4fc;">💵 Record Salary Payout / Settlement</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; align-items: flex-end;">
+                        <div>
+                            <label style="font-size:0.75rem;">Amount Paid (₹):</label>
+                            <input type="number" id="ledgerPaidAmount" placeholder="0.00" oninput="app.calcStaffLedgerTotals()">
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem;">Payment Date:</label>
+                            <input type="date" id="ledgerPaidDate">
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem;">Payment Mode:</label>
+                            <select id="ledgerPaymentMode">
+                                <option value="Cash">Cash</option>
+                                <option value="UPI / GPay">UPI / GPay</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem;">Notes / Remarks:</label>
+                            <input type="text" id="ledgerPaymentNote" placeholder="e.g. Cleared via UPI">
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-success" style="width: 100%; height: 42px;" onclick="app.saveStaffMonthlySalary()">💾 Save Month Salary</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.82rem; color: var(--text-muted);">
+                        <span>Status: <strong id="ledgerMonthStatusBadge" class="badge badge-warning">Pending</strong></span>
+                        <span>Balance Left to Pay: <strong id="ledgerMonthBalanceLeft" style="color:#ef4444;">₹0.00</strong></span>
+                    </div>
+                </div>
+
+                <!-- Month Delivery / Trips Ledger Table -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                    <div>
+                        <h4 style="margin: 0; font-size: 0.95rem;">📦 Delivery Trips & Commission Logs (This Month)</h4>
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">Driver: ₹2 / Box | Helper: ₹1 / Box (Auto-updated from Sales & manual trips)</div>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="app.addManualCommission()">+ Add Delivery Trip</button>
+                </div>
+                <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Store Name / Notes</th>
+                                <th>Boxes Delivered</th>
+                                <th>Rate / Box</th>
+                                <th>Commission</th>
+                                <th>Source</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staffLedgerBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- Full Salary History Table for this Staff across all months -->
+                <h4 style="margin: 12px 0 6px 0; font-size: 0.95rem; color: #38bdf8;">📅 All Months Salary Structure History</h4>
+                <div class="table-responsive" style="max-height: 180px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Month</th>
+                                <th>Fixed Salary</th>
+                                <th>Commission (Trips)</th>
+                                <th>Extra</th>
+                                <th>Advance</th>
+                                <th>Net Payable</th>
+                                <th>Paid</th>
+                                <th>Balance</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staffMonthHistoryBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="app.closeModal('staffLedgerModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="app.js?v=20260927_3"></script>
+    <script>
+        // Universal modal closer & safety bridge
+        document.addEventListener('click', function(e) {
+            // Close cross buttons
+            var closeBtn = e.target.closest('.close-btn');
+            if (closeBtn) {
+                var modal = closeBtn.closest('.modal-overlay');
+                if (modal) {
+                    modal.classList.remove('active');
+                    modal.style.display = 'none';
+                }
+                return;
+            }
+
+            // Cancel / Close buttons inside modal
+            var cancelBtn = e.target.closest('.modal-footer button.btn-secondary') || 
+                            (e.target.tagName === 'BUTTON' && (e.target.textContent.trim().toLowerCase() === 'cancel' || e.target.textContent.trim().toLowerCase() === 'close') && e.target.closest('.modal-overlay'));
+            if (cancelBtn) {
+                var modal = cancelBtn.closest('.modal-overlay');
+                if (modal) {
+                    modal.classList.remove('active');
+                    modal.style.display = 'none';
+                }
+                return;
+            }
+
+            // Backdrop click
+            if (e.target.classList.contains('modal-overlay')) {
+                e.target.classList.remove('active');
+                e.target.style.display = 'none';
+            }
+        });
+
+        // Escape key to close modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.active').forEach(function(m) {
+                    m.classList.remove('active');
+                    m.style.display = 'none';
+                });
+            }
+        });
+    </script>
+</body>
+</html>
