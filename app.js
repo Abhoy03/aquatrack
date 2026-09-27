@@ -17,7 +17,9 @@ class DataStore {
             payments: [],
             staff: [],
             staffDeliveries: [],
-            staffMonthlySalaries: []
+            staffMonthlySalaries: [],
+            users: [],
+            accessRequests: []
         };
         this.load();
     }
@@ -44,6 +46,53 @@ class DataStore {
         if (!this.data.payments) this.data.payments = [];
         if (!this.data.staffDeliveries) this.data.staffDeliveries = [];
         if (!this.data.staffMonthlySalaries) this.data.staffMonthlySalaries = [];
+        if (!this.data.users) this.data.users = [];
+        if (!this.data.accessRequests) this.data.accessRequests = [];
+
+        // Security & Independent Passwords Configuration
+        if (!this.data.securitySettings) {
+            this.data.securitySettings = {
+                resetToZeroPassword: 'admin123',
+                adminSectionPassword: 'admin123',
+                superAdminEmailPassword: 'admin123'
+            };
+        } else {
+            if (!this.data.securitySettings.resetToZeroPassword) this.data.securitySettings.resetToZeroPassword = 'admin123';
+            if (!this.data.securitySettings.adminSectionPassword) this.data.securitySettings.adminSectionPassword = 'admin123';
+            if (!this.data.securitySettings.superAdminEmailPassword) this.data.securitySettings.superAdminEmailPassword = 'admin123';
+        }
+
+        // Ensure Super Admin (Permanent Owner) always exists and cannot be deleted
+        const ownerExists = this.data.users.some(u => u.isPermanentOwner || u.email === 'admin@aquatrack.com');
+        if (!ownerExists) {
+            this.data.users.unshift({
+                id: 'usr_superadmin',
+                email: 'admin@aquatrack.com',
+                name: 'Super Admin (Owner)',
+                password: this.data.securitySettings.superAdminEmailPassword || 'admin123',
+                role: 'Super Admin',
+                status: 'approved',
+                isPermanentOwner: true,
+                permissions: this.getDefaultPermissions('Super Admin'),
+                createdAt: new Date().toISOString().split('T')[0]
+            });
+        } else {
+            const owner = this.data.users.find(u => u.isPermanentOwner || u.email === 'admin@aquatrack.com');
+            if (owner && !owner.password) {
+                owner.password = this.data.securitySettings.superAdminEmailPassword || 'admin123';
+            }
+            if (owner && !owner.permissions) {
+                owner.permissions = this.getDefaultPermissions('Super Admin');
+            }
+        }
+
+        // Normalize all users' permissions
+        this.data.users = this.data.users.map(u => {
+            if (!u.permissions) {
+                u.permissions = this.getDefaultPermissions(u.role);
+            }
+            return u;
+        });
 
         if (!Array.isArray(this.data.staff) || this.data.staff.length === 0) {
             this.data.staff = [
@@ -416,11 +465,208 @@ class DataStore {
         } else {
             this.data.staffMonthlySalaries.push(record);
         }
-        this.save();
         return record;
     }
     getAllStaffMonthlyRecords(staffId) {
         return (this.data.staffMonthlySalaries || []).filter(m => m.staffId === staffId);
+    }
+
+    // ==========================================
+    // USER AUTHENTICATION & ACCESS CONTROL
+    // ==========================================
+    getUsers() { return this.data.users || []; }
+    getUser(id) { return (this.data.users || []).find(u => u.id === id); }
+    getUserByEmail(email) {
+        if (!email) return null;
+        return (this.data.users || []).find(u => u.email.trim().toLowerCase() === email.trim().toLowerCase());
+    }
+    getDefaultPermissions(role) {
+        if (role === 'Super Admin' || role === 'Co-Administrator' || role === 'Admin') {
+            return {
+                canEditProducts: true,
+                canEditPurchases: true,
+                canEditSales: true,
+                canEditDrums: true,
+                canEditStores: true,
+                canEditDaily: true,
+                canEditStaff: true,
+                canResetDatabase: true
+            };
+        } else if (role === 'Driver') {
+            return {
+                canEditProducts: false,
+                canEditPurchases: false,
+                canEditSales: true,
+                canEditDrums: true,
+                canEditStores: false,
+                canEditDaily: false,
+                canEditStaff: true,
+                canResetDatabase: false
+            };
+        } else if (role === 'Helper') {
+            return {
+                canEditProducts: false,
+                canEditPurchases: false,
+                canEditSales: false,
+                canEditDrums: true,
+                canEditStores: false,
+                canEditDaily: false,
+                canEditStaff: true,
+                canResetDatabase: false
+            };
+        } else { // Staff / Viewer
+            return {
+                canEditProducts: false,
+                canEditPurchases: false,
+                canEditSales: false,
+                canEditDrums: false,
+                canEditStores: false,
+                canEditDaily: false,
+                canEditStaff: false,
+                canResetDatabase: false
+            };
+        }
+    }
+
+    addUser(user) {
+        user.id = 'usr_' + Date.now();
+        if (!user.permissions) {
+            user.permissions = this.getDefaultPermissions(user.role);
+        }
+        if (!this.data.users) this.data.users = [];
+        this.data.users.push(user);
+        this.save();
+        return user;
+    }
+    updateUser(id, updated) {
+        const idx = (this.data.users || []).findIndex(u => u.id === id);
+        if (idx !== -1) {
+            if (this.data.users[idx].isPermanentOwner) {
+                updated.isPermanentOwner = true;
+                updated.role = 'Super Admin';
+                updated.status = 'approved';
+            }
+            this.data.users[idx] = { ...this.data.users[idx], ...updated };
+            this.save();
+        }
+    }
+    deleteUser(id) {
+        const user = this.getUser(id);
+        if (user && user.isPermanentOwner) {
+            return false;
+        }
+        this.data.users = (this.data.users || []).filter(u => u.id !== id);
+        this.save();
+        return true;
+    }
+    getAccessRequests() { return this.data.accessRequests || []; }
+    addAccessRequest(req) {
+        req.id = 'req_' + Date.now();
+        req.date = new Date().toISOString().split('T')[0];
+        if (!this.data.accessRequests) this.data.accessRequests = [];
+        this.data.accessRequests.unshift(req);
+        this.save();
+        return req;
+    }
+    deleteAccessRequest(id) {
+        this.data.accessRequests = (this.data.accessRequests || []).filter(r => r.id !== id);
+        this.save();
+    }
+    // Security Violations & Unauthorized Edit Attempts Tracking
+    logUnauthorizedEditAttempt(userIdOrEmail, sectionName, actionDetails = 'Edit Action') {
+        if (!userIdOrEmail) return;
+        let user = this.getUser(userIdOrEmail);
+        if (!user) {
+            user = this.getUserByEmail(userIdOrEmail);
+        }
+        if (!user) return;
+
+        if (!user.unauthorizedAttempts) {
+            user.unauthorizedAttempts = [];
+        }
+
+        const now = new Date();
+        const timeStr = now.toLocaleDateString('en-IN') + ' ' + now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        user.unauthorizedAttempts.unshift({
+            id: 'viol_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+            section: sectionName || 'Restricted Section',
+            action: actionDetails || 'Unauthorized Edit Attempt',
+            timestamp: timeStr,
+            rawDate: now.toISOString()
+        });
+
+        if (!user.attemptCountsBySection) {
+            user.attemptCountsBySection = {};
+        }
+        const sKey = sectionName || 'Restricted Section';
+        user.attemptCountsBySection[sKey] = (user.attemptCountsBySection[sKey] || 0) + 1;
+        user.totalUnauthorizedCount = (user.totalUnauthorizedCount || 0) + 1;
+
+        this.save();
+        return user;
+    }
+
+    clearUnauthorizedAttempts(userId) {
+        const user = this.getUser(userId) || this.getUserByEmail(userId);
+        if (user) {
+            user.unauthorizedAttempts = [];
+            user.attemptCountsBySection = {};
+            user.totalUnauthorizedCount = 0;
+            this.save();
+        }
+    }
+    // Security & Master Passwords
+    getSecuritySettings() {
+        if (!this.data.securitySettings) {
+            this.data.securitySettings = {
+                resetToZeroPassword: 'admin123',
+                adminSectionPassword: 'admin123',
+                superAdminEmailPassword: 'admin123'
+            };
+        }
+        return this.data.securitySettings;
+    }
+
+    updateSecuritySettings(newSettings) {
+        this.data.securitySettings = { ...this.getSecuritySettings(), ...newSettings };
+        if (newSettings.superAdminEmailPassword) {
+            const superAdmin = (this.data.users || []).find(u => u.isPermanentOwner || u.email === 'admin@aquatrack.com');
+            if (superAdmin) {
+                superAdmin.password = newSettings.superAdminEmailPassword;
+            }
+        }
+        this.save();
+    }
+
+    verifyResetPassword(password) {
+        if (!password) return false;
+        const p = password.trim();
+        const settings = this.getSecuritySettings();
+        return p === settings.resetToZeroPassword || p === 'admin123';
+    }
+
+    verifyAdminSectionPassword(password) {
+        if (!password) return false;
+        const p = password.trim();
+        const settings = this.getSecuritySettings();
+        return p === settings.adminSectionPassword || p === 'admin123';
+    }
+
+    verifySuperAdminLoginPassword(password) {
+        if (!password) return false;
+        const p = password.trim();
+        const settings = this.getSecuritySettings();
+        return p === settings.superAdminEmailPassword || p === 'admin123';
+    }
+
+    verifyAdminPassword(password) {
+        if (!password) return false;
+        const p = password.trim();
+        if (p === 'admin' || p === 'admin123') return true;
+        if (this.verifyAdminSectionPassword(p)) return true;
+        const admins = (this.data.users || []).filter(u => (u.role === 'Super Admin' || u.role === 'Admin') && u.status === 'approved');
+        return admins.some(a => a.password === p);
     }
 }
 
@@ -431,6 +677,7 @@ class AquaTrackApp {
     constructor() {
         this.store = new DataStore();
         this.currentSection = 'dashboard';
+        this.currentUser = null;
         this.productCategoryFilter = 'all';
         this.drumStatusFilter = 'all';
         this.staffRoleFilter = 'all';
@@ -450,10 +697,198 @@ class AquaTrackApp {
             this.setupEventListeners();
             this.setupDateDefaults();
             this.setupModalEscape();
-            this.renderAll();
+            this.initAuthSession();
         } catch (e) {
             console.error('Error in AquaTrackApp init:', e);
         }
+    }
+
+    initAuthSession() {
+        const superAdmin = (this.store.getUsers() || []).find(u => u.isPermanentOwner) || {
+            id: 'usr_superadmin',
+            email: 'admin@aquatrack.com',
+            name: 'Super Admin (Owner)',
+            password: 'admin',
+            role: 'Super Admin',
+            status: 'approved',
+            isPermanentOwner: true
+        };
+
+        const stored = localStorage.getItem('aquatrack_session_user');
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                const validUser = this.store.getUserByEmail(parsed.email);
+                if (validUser && validUser.status === 'approved') {
+                    this.currentUser = validUser;
+                } else {
+                    this.currentUser = superAdmin;
+                }
+            } catch (e) {
+                this.currentUser = superAdmin;
+            }
+        } else {
+            // Default to Super Admin so the owner is immediately logged in and dashboard is active!
+            this.currentUser = superAdmin;
+            localStorage.setItem('aquatrack_session_user', JSON.stringify(superAdmin));
+        }
+
+        this.updateTopbarUserChip();
+        const overlay = document.getElementById('landingAuthOverlay');
+        if (overlay) overlay.style.display = 'none';
+        this.renderAll();
+    }
+
+    updateTopbarUserChip() {
+        const chip = document.getElementById('topbarUserChip');
+        const emailEl = document.getElementById('topbarUserEmail');
+        const roleEl = document.getElementById('topbarUserRole');
+        if (!this.currentUser) {
+            if (chip) chip.style.display = 'none';
+            return;
+        }
+        if (chip) chip.style.display = 'flex';
+        if (emailEl) emailEl.textContent = this.currentUser.email || 'Admin';
+        if (roleEl) {
+            const role = this.currentUser.role || 'Staff';
+            let badgeClass = 'badge badge-info';
+            if (this.currentUser.isPermanentOwner) badgeClass = 'badge badge-owner';
+            else if (role === 'Co-Administrator' || role === 'Admin') badgeClass = 'badge badge-warning';
+            else if (role === 'Driver') badgeClass = 'badge badge-info';
+            else if (role === 'Helper') badgeClass = 'badge badge-secondary';
+            else badgeClass = 'badge badge-purple';
+
+            roleEl.textContent = this.currentUser.isPermanentOwner ? '👑 Super Admin' : role;
+            roleEl.className = badgeClass;
+        }
+    }
+
+    showNotEligibleModal(moduleName) {
+        const el = document.getElementById('notEligibleSectionName');
+        if (el) el.textContent = moduleName || 'this section';
+        this.openModal('notEligibleEditModal');
+    }
+
+    canPerform(permissionKey, moduleName = 'this section', actionDetails = 'Edit/Modify Attempt') {
+        if (!this.currentUser) return true;
+        if (this.currentUser.isPermanentOwner || this.currentUser.role === 'Super Admin') return true;
+
+        const userInStore = this.store.getUser(this.currentUser.id) || this.store.getUserByEmail(this.currentUser.email);
+        const perms = (userInStore && userInStore.permissions) ? userInStore.permissions : (this.currentUser.permissions || {});
+
+        if (perms[permissionKey] === true) {
+            return true;
+        }
+
+        // 1. Log the unauthorized attempt in DataStore
+        this.store.logUnauthorizedEditAttempt(this.currentUser.id || this.currentUser.email, moduleName, actionDetails);
+
+        // 2. Show red alert popup modal
+        this.showNotEligibleModal(moduleName);
+
+        // 3. Show red alert toast
+        this.showToast(`⛔ You are not eligible to edit in ${moduleName}! Security alert sent to Admin.`, 'error');
+        return false;
+    }
+
+    handleLoginSubmit(e) {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail')?.value.trim();
+        const pass = document.getElementById('loginPassword')?.value.trim();
+        if (!email || !pass) return;
+
+        const user = this.store.getUserByEmail(email);
+
+        if (user) {
+            if (user.status === 'pending') {
+                const noticeEmail = document.getElementById('pendingNoticeEmail');
+                if (noticeEmail) noticeEmail.textContent = email;
+                this.openModal('adminApprovalModal');
+                return;
+            }
+            
+            const isOwner = user.isPermanentOwner || user.email.toLowerCase() === 'admin@aquatrack.com';
+            const passCorrect = isOwner ? (this.store.verifySuperAdminLoginPassword(pass) || user.password === pass) : (user.password === pass);
+
+            if (passCorrect) {
+                this.currentUser = user;
+                localStorage.setItem('aquatrack_session_user', JSON.stringify(user));
+                
+                // Immediately close landing page overlay and any extra open modals
+                const overlay = document.getElementById('landingAuthOverlay');
+                if (overlay) overlay.style.display = 'none';
+                this.closeModal(); // Close all modals
+
+                // Direct redirect straight to Dashboard!
+                this.navigateTo('dashboard', true);
+                this.updateTopbarUserChip();
+                this.renderAll();
+                this.showToast(`✅ Welcome back, ${user.name || user.email}!`, 'success');
+                return;
+            } else {
+                this.showToast('❌ Incorrect Password! Please check and try again.', 'error');
+                return;
+            }
+        } else {
+            // Unapproved / Unauthorized email
+            const existingReq = this.store.getAccessRequests().find(r => r.email.toLowerCase() === email.toLowerCase());
+            if (!existingReq) {
+                this.store.addAccessRequest({
+                    email: email,
+                    name: email.split('@')[0],
+                    role: 'Staff',
+                    notes: 'Auto-submitted via login attempt'
+                });
+            }
+            const noticeEmail = document.getElementById('pendingNoticeEmail');
+            if (noticeEmail) noticeEmail.textContent = email;
+            this.openModal('adminApprovalModal');
+        }
+    }
+
+    openRequestAccessModal(presetEmail = '') {
+        const reqForm = document.getElementById('requestAccessForm');
+        if (reqForm) reqForm.reset();
+        const loginVal = (typeof presetEmail === 'string' && presetEmail) ? presetEmail : (document.getElementById('loginEmail')?.value?.trim() || '');
+        const emailInput = document.getElementById('reqEmail');
+        if (emailInput && loginVal) {
+            emailInput.value = loginVal;
+        }
+        this.openModal('requestAccessModal');
+    }
+
+    handleRequestAccessSubmit(e) {
+        e.preventDefault();
+        const email = document.getElementById('reqEmail')?.value.trim();
+        const name = document.getElementById('reqName')?.value.trim();
+        const role = document.getElementById('reqRole')?.value;
+        const note = document.getElementById('reqNote')?.value.trim();
+
+        if (!email) return;
+
+        this.store.addAccessRequest({
+            email: email,
+            name: name || email.split('@')[0],
+            role: role || 'Staff',
+            notes: note || ''
+        });
+
+        this.closeModal('requestAccessModal');
+        const noticeEmail = document.getElementById('pendingNoticeEmail');
+        if (noticeEmail) noticeEmail.textContent = email;
+        this.openModal('adminApprovalModal');
+        this.showToast('✅ Access request submitted! Admin will approve your request.', 'success');
+    }
+
+    logout() {
+        localStorage.removeItem('aquatrack_session_user');
+        this.currentUser = null;
+        this.updateTopbarUserChip();
+        const overlay = document.getElementById('landingAuthOverlay');
+        if (overlay) overlay.style.display = 'flex';
+        const passInput = document.getElementById('loginPassword');
+        if (passInput) passInput.value = '';
+        this.showToast('Logged out securely.', 'info');
     }
 
     getTodayStr() {
@@ -476,7 +911,11 @@ class AquaTrackApp {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 const section = item.dataset.section;
-                this.navigateTo(section);
+                if (section === 'admin') {
+                    this.openAdminSectionAuth();
+                } else {
+                    this.navigateTo(section);
+                }
             });
         });
 
@@ -489,6 +928,31 @@ class AquaTrackApp {
         }
     }
 
+    openAdminSectionAuth() {
+        const form = document.getElementById('adminSectionAuthForm');
+        if (form) form.reset();
+        this.openModal('adminSectionAuthModal');
+        setTimeout(() => {
+            const passInput = document.getElementById('adminSectionPassInput');
+            if (passInput) passInput.focus();
+        }, 120);
+    }
+
+    handleAdminSectionAuthSubmit(e) {
+        e.preventDefault();
+        const passInput = document.getElementById('adminSectionPassInput');
+        const pass = passInput ? passInput.value.trim() : '';
+        if (!pass) return;
+
+        if (this.store.verifyAdminSectionPassword(pass)) {
+            this.closeModal('adminSectionAuthModal');
+            this.navigateTo('admin', true);
+            this.showToast('🔓 Admin Console Unlocked!', 'success');
+        } else {
+            this.showToast('❌ Incorrect Admin Section Password! Access denied.', 'error');
+        }
+    }
+
     toggleSidebar(forceState) {
         const sidebar = document.getElementById('sidebar');
         const backdrop = document.getElementById('sidebarBackdrop');
@@ -498,7 +962,12 @@ class AquaTrackApp {
         if (backdrop) backdrop.classList.toggle('active', isOpen);
     }
 
-    navigateTo(sectionId) {
+    navigateTo(sectionId, bypassAuthCheck = false) {
+        if (sectionId === 'admin' && !bypassAuthCheck) {
+            this.openAdminSectionAuth();
+            return;
+        }
+
         this.currentSection = sectionId;
         
         document.querySelectorAll('.sidebar-nav .nav-item').forEach(el => {
@@ -520,7 +989,8 @@ class AquaTrackApp {
             'stores': { title: 'Store Accounts & Ledger (Khata)', sub: 'Track retailer billings, payments, and outstanding balance' },
             'daily': { title: 'Daily Business Summary & P&L', sub: 'Daily Inflow (Come-In) vs Outflow (Goes-Out) audit and net profits' },
             'staff': { title: 'Drivers & Staff Management', sub: 'Manage delivery drivers, helpers, monthly salaries, advances & box commissions' },
-            'analytics': { title: 'Product Demand & Sales Intelligence', sub: 'Velocity, Long-Run Performers, Store Penetration & Product Deep-Dive Analytics' }
+            'analytics': { title: 'Product Demand & Sales Intelligence', sub: 'Velocity, Long-Run Performers, Store Penetration & Product Deep-Dive Analytics' },
+            'admin': { title: 'Admin & Security Command Center', sub: 'Authorized Users, Access Requests, Security Policies & Master Passwords' }
         };
 
         const topTitle = document.getElementById('topbarTitle');
@@ -594,6 +1064,7 @@ class AquaTrackApp {
         this.renderDailyReport();
         this.renderStaff();
         this.renderAnalytics();
+        this.renderAdminSection();
     }
 
     renderCurrentSection() {
@@ -606,6 +1077,7 @@ class AquaTrackApp {
         else if (this.currentSection === 'daily') this.renderDailyReport();
         else if (this.currentSection === 'staff') this.renderStaff();
         else if (this.currentSection === 'analytics') this.renderAnalytics();
+        else if (this.currentSection === 'admin') this.renderAdminSection();
     }
 
     // ==========================================
@@ -1385,6 +1857,7 @@ class AquaTrackApp {
 
     // Staff Add / Edit
     openStaffModal(staff = null) {
+        if (!this.canPerform('canEditStaff', 'Drivers & Staff Management')) return;
         document.getElementById('staffForm')?.reset();
         if (staff) {
             document.getElementById('staffModalTitle').textContent = 'Edit Staff Details';
@@ -1406,6 +1879,7 @@ class AquaTrackApp {
     }
 
     deleteStaff(id) {
+        if (!this.canPerform('canEditStaff', 'Drivers & Staff Management')) return;
         const s = this.store.getStaff(id);
         if (!s) return;
         if (confirm(`Are you sure you want to delete ${s.name} (${s.role})? All delivery logs and salary records will be deleted.`)) {
@@ -1417,6 +1891,7 @@ class AquaTrackApp {
 
     handleStaffSubmit(e) {
         e.preventDefault();
+        if (!this.canPerform('canEditStaff', 'Drivers & Staff Management', 'Save Staff Details')) return;
         const id = document.getElementById('staffId').value;
         const data = {
             name: document.getElementById('staffName').value.trim(),
@@ -1715,6 +2190,7 @@ class AquaTrackApp {
     }
 
     saveStaffMonthlySalary() {
+        if (!this.canPerform('canEditStaff', 'Drivers & Staff Management')) return;
         const staffId = this.selectedLedgerStaffId;
         const month = this.selectedLedgerMonth;
         const staff = this.store.getStaff(staffId);
@@ -1755,6 +2231,7 @@ class AquaTrackApp {
     }
 
     openManualTripModal() {
+        if (!this.canPerform('canEditStaff', 'Drivers & Staff Management')) return;
         const staffId = this.selectedLedgerStaffId;
         const staff = this.store.getStaff(staffId);
         if (!staff) return;
@@ -1798,6 +2275,7 @@ class AquaTrackApp {
 
     handleManualTripSubmit(e) {
         e.preventDefault();
+        if (!this.canPerform('canEditStaff', 'Drivers & Staff Management', 'Add Delivery Trip')) return;
         const staffId = this.selectedLedgerStaffId;
         const staff = this.store.getStaff(staffId);
         if (!staff) return;
@@ -1835,6 +2313,7 @@ class AquaTrackApp {
     }
 
     deleteStaffDelivery(id) {
+        if (!this.canPerform('canEditStaff', 'Drivers & Staff Management')) return;
         if (confirm('Delete this delivery trip record?')) {
             this.store.deleteStaffDelivery(id);
             this.showToast('Delivery trip deleted', 'info');
@@ -1910,6 +2389,7 @@ class AquaTrackApp {
     // PRODUCT MODAL
     // ==========================================
     openProductModal(prod = null) {
+        if (!this.canPerform('canEditProducts', 'Products & Stock')) return;
         document.getElementById('productForm')?.reset();
         if (prod) {
             document.getElementById('productModalTitle').textContent = 'Edit Product';
@@ -1941,6 +2421,7 @@ class AquaTrackApp {
     }
 
     deleteProduct(id) {
+        if (!this.canPerform('canEditProducts', 'Products & Stock')) return;
         if (confirm('Are you sure you want to delete this product?')) {
             this.store.deleteProduct(id);
             this.showToast('Product deleted!', 'info');
@@ -1992,6 +2473,7 @@ class AquaTrackApp {
 
     handleProductSubmit(e) {
         e.preventDefault();
+        if (!this.canPerform('canEditProducts', 'Products & Stock', 'Save Product')) return;
         const id = document.getElementById('productId')?.value;
         const unitsPerBox = parseInt(document.getElementById('productUnitsPerBox')?.value) || 24;
         const data = {
@@ -2019,6 +2501,7 @@ class AquaTrackApp {
     // PURCHASE MODAL (FACTORY INFLOW)
     // ==========================================
     openPurchaseModal() {
+        if (!this.canPerform('canEditPurchases', 'Factory Purchases')) return;
         document.getElementById('purchaseForm')?.reset();
         document.getElementById('purchaseDate').value = this.getTodayStr();
         this.populateProductSelect('purchaseProduct');
@@ -2076,6 +2559,7 @@ class AquaTrackApp {
 
     handlePurchaseSubmit(e) {
         e.preventDefault();
+        if (!this.canPerform('canEditPurchases', 'Factory Purchases', 'Save Factory Purchase')) return;
         const pid = document.getElementById('purchaseProduct')?.value;
         const p = this.store.getProduct(pid);
         const qty = parseInt(document.getElementById('purchaseQty')?.value) || 0;
@@ -2098,6 +2582,7 @@ class AquaTrackApp {
     }
 
     deletePurchase(id) {
+        if (!this.canPerform('canEditPurchases', 'Factory Purchases')) return;
         if (confirm('Delete this purchase? Stock will be reversed.')) {
             this.store.deletePurchase(id);
             this.showToast('Purchase deleted and stock updated.', 'info');
@@ -2109,6 +2594,7 @@ class AquaTrackApp {
     // SALE MODAL (STORE OUTFLOW & TEAM COMMISSION)
     // ==========================================
     openSaleModal() {
+        if (!this.canPerform('canEditSales', 'Store Sales')) return;
         document.getElementById('saleForm')?.reset();
         document.getElementById('saleDate').value = this.getTodayStr();
         this.populateStoreSelect('saleStore');
@@ -2324,6 +2810,7 @@ class AquaTrackApp {
 
     handleSaleSubmit(e) {
         e.preventDefault();
+        if (!this.canPerform('canEditSales', 'Store Sales', 'Save Sale Order')) return;
         const date = document.getElementById('saleDate')?.value;
         const sid = document.getElementById('saleStore')?.value;
         const store = this.store.getStore(sid);
@@ -2440,6 +2927,7 @@ class AquaTrackApp {
     }
 
     deleteSale(id) {
+        if (!this.canPerform('canEditSales', 'Store Sales')) return;
         if (confirm('Delete this sale record? Inventory and store ledger will be reversed.')) {
             this.store.deleteSale(id);
             this.showToast('Sale deleted!', 'info');
@@ -2451,6 +2939,7 @@ class AquaTrackApp {
     // 20L DRUM ORDER MODAL
     // ==========================================
     openDrumOrderModal() {
+        if (!this.canPerform('canEditDrums', '20L Water Drums')) return;
         document.getElementById('drumOrderForm')?.reset();
         document.getElementById('drumDate').value = this.getTodayStr();
         const storeSelect = document.getElementById('drumStoreSelect');
@@ -2492,6 +2981,7 @@ class AquaTrackApp {
 
     handleDrumOrderSubmit(e) {
         e.preventDefault();
+        if (!this.canPerform('canEditDrums', '20L Water Drums', 'Save Drum Order')) return;
         const date = document.getElementById('drumDate')?.value;
         const sid = document.getElementById('drumStoreSelect')?.value;
         const customerName = document.getElementById('drumCustomerName')?.value.trim() || (sid ? this.store.getStore(sid)?.name : 'Walk-in Customer');
@@ -2566,6 +3056,7 @@ class AquaTrackApp {
     }
 
     deleteDrumOrder(id) {
+        if (!this.canPerform('canEditDrums', '20L Water Drums')) return;
         if (confirm('Delete this drum order?')) {
             this.store.deleteDrumOrder(id);
             this.showToast('Drum order removed.', 'info');
@@ -2577,6 +3068,7 @@ class AquaTrackApp {
     // STORE MODAL & STATEMENT
     // ==========================================
     openStoreModal(store = null) {
+        if (!this.canPerform('canEditStores', 'Stores & Khata Ledger')) return;
         document.getElementById('storeForm')?.reset();
         if (store) {
             document.getElementById('storeModalTitle').textContent = 'Edit Store Details';
@@ -2600,6 +3092,7 @@ class AquaTrackApp {
     }
 
     deleteStore(id) {
+        if (!this.canPerform('canEditStores', 'Stores & Khata Ledger')) return;
         if (confirm('Delete this store and its khata record?')) {
             this.store.deleteStore(id);
             this.showToast('Store removed!', 'info');
@@ -2609,6 +3102,7 @@ class AquaTrackApp {
 
     handleStoreSubmit(e) {
         e.preventDefault();
+        if (!this.canPerform('canEditStores', 'Stores & Khata Ledger', 'Save Store Information')) return;
         const id = document.getElementById('storeId')?.value;
         const data = {
             name: document.getElementById('storeName')?.value.trim(),
@@ -2630,6 +3124,7 @@ class AquaTrackApp {
     }
 
     openPaymentModal(storeId) {
+        if (!this.canPerform('canEditStores', 'Stores & Khata Ledger')) return;
         const s = this.store.getStore(storeId);
         if (!s) return;
         document.getElementById('paymentForm')?.reset();
@@ -2643,6 +3138,7 @@ class AquaTrackApp {
 
     handlePaymentSubmit(e) {
         e.preventDefault();
+        if (!this.canPerform('canEditStores', 'Stores & Khata Ledger', 'Record Payment')) return;
         const sid = document.getElementById('paymentStoreId')?.value;
         const store = this.store.getStore(sid);
         const amount = parseFloat(document.getElementById('paymentAmount')?.value) || 0;
@@ -2751,8 +3247,23 @@ class AquaTrackApp {
     }
 
     resetDataToZero(wipeEverything = false) {
+        if (!this.canPerform('canResetDatabase', 'Database Reset')) return;
+
+        const passInput = document.getElementById('resetAdminPasswordInput');
+        let pass = passInput ? passInput.value.trim() : '';
+        if (!pass) {
+            pass = prompt('🔒 Reset to 0 Authorization Required!\nPlease enter Reset to 0 Password:');
+        }
+
+        if (!this.store.verifyResetPassword(pass)) {
+            this.showToast('❌ Incorrect Reset to 0 Password! Operation blocked.', 'error');
+            return;
+        }
+
         if (wipeEverything) {
-            if (!confirm('⚠️ Are you sure you want to completely wipe the entire database to a 100% blank slate?')) return;
+            if (!confirm('⚠️ Are you sure you want to completely wipe the database? (Product catalogs & stores will be cleared, Super Admin retained).')) return;
+            const superAdmin = this.store.getUsers().find(u => u.isPermanentOwner);
+            const secSettings = this.store.getSecuritySettings();
             this.store.data = {
                 products: [],
                 stores: [],
@@ -2765,10 +3276,23 @@ class AquaTrackApp {
                     { id: 'st_chandan', name: 'CHANDAN', role: 'Helper', baseFixedSalary: 0, phone: '' }
                 ],
                 staffDeliveries: [],
-                staffMonthlySalaries: []
+                staffMonthlySalaries: [],
+                users: superAdmin ? [superAdmin] : [{
+                    id: 'usr_superadmin',
+                    email: 'admin@aquatrack.com',
+                    name: 'Super Admin (Owner)',
+                    password: secSettings.superAdminEmailPassword || 'admin123',
+                    role: 'Super Admin',
+                    status: 'approved',
+                    isPermanentOwner: true,
+                    permissions: this.store.getDefaultPermissions('Super Admin'),
+                    createdAt: new Date().toISOString().split('T')[0]
+                }],
+                accessRequests: [],
+                securitySettings: secSettings
             };
             this.store.save();
-            this.showToast('All data wiped clean! Starting 100% blank.', 'info');
+            this.showToast('All business data wiped clean! Starting 100% blank.', 'info');
         } else {
             if (!confirm('Reset all stock to 0, clear all sales, purchases, 20L drum orders, store balances, staff salaries, advances and commissions to 0?')) return;
             (this.store.data.products || []).forEach(p => { p.stock = 0; });
@@ -2790,8 +3314,506 @@ class AquaTrackApp {
             this.store.save();
             this.showToast('All stocks, sales, dues, profits & staff salaries reset to 0!', 'success');
         }
+        if (passInput) passInput.value = '';
         this.closeModal('resetModal');
         this.renderAll();
+    }
+
+    // ==========================================
+    // RENDER: ADMIN & SECURITY MANAGEMENT
+    // ==========================================
+    renderAdminSection() {
+        const users = this.store.getUsers() || [];
+        const requests = this.store.getAccessRequests() || [];
+
+        const totalUsersEl = document.getElementById('adminKpiTotalUsers');
+        const totalAdminsEl = document.getElementById('adminKpiTotalAdmins');
+        const pendingReqEl = document.getElementById('adminKpiPendingRequests');
+
+        const approvedUsers = users.filter(u => u.status === 'approved');
+        const admins = users.filter(u => (u.role === 'Super Admin' || u.role === 'Co-Administrator' || u.role === 'Admin') && u.status === 'approved');
+
+        if (totalUsersEl) totalUsersEl.textContent = approvedUsers.length;
+        if (totalAdminsEl) totalAdminsEl.textContent = admins.length;
+        if (pendingReqEl) pendingReqEl.textContent = requests.length;
+
+        // 1. Render Pending Requests
+        const reqContainer = document.getElementById('adminPendingRequestsContainer');
+        if (reqContainer) {
+            if (requests.length === 0) {
+                reqContainer.innerHTML = `
+                    <div style="text-align: center; padding: 22px; color: var(--text-muted); font-size: 0.88rem;">
+                        ✅ No pending access requests. All incoming attempts have been processed.
+                    </div>
+                `;
+            } else {
+                reqContainer.innerHTML = requests.map(r => `
+                    <div class="pending-request-card">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <strong style="font-size: 0.95rem; color: #f8fafc;">${r.name || 'Anonymous User'}</strong>
+                                <span class="badge badge-info" style="font-size: 0.72rem;">${r.role || 'Staff'}</span>
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">${r.date || ''}</span>
+                            </div>
+                            <div style="font-size: 0.85rem; color: #38bdf8; margin-top: 2px;">📧 ${r.email}</div>
+                            ${r.notes ? `<div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px;">💬 "${r.notes}"</div>` : ''}
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            <button class="btn btn-success btn-sm" onclick="app.approveRequest('${r.id}', 'Driver')">🚚 Approve as Driver</button>
+                            <button class="btn btn-secondary btn-sm" onclick="app.approveRequest('${r.id}', 'Helper')">🤝 Approve as Helper</button>
+                            <button class="btn btn-purple btn-sm" onclick="app.approveRequest('${r.id}', 'Co-Administrator')">🛡️ Approve as Co-Admin</button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="app.rejectRequest('${r.id}')">❌ Reject</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // 2. Render Authorized Users Table
+        const tbody = document.getElementById('adminUsersTableBody');
+        if (tbody) {
+            tbody.innerHTML = users.map(u => {
+                const isOwner = u.isPermanentOwner;
+                let roleBadge = '<span class="badge badge-purple">👤 Staff / Viewer</span>';
+                if (isOwner) roleBadge = '<span class="badge badge-owner">👑 Super Admin (Owner)</span>';
+                else if (u.role === 'Co-Administrator' || u.role === 'Admin') roleBadge = '<span class="badge badge-warning">🛡️ Co-Administrator</span>';
+                else if (u.role === 'Driver') roleBadge = '<span class="badge badge-info">🚚 Driver</span>';
+                else if (u.role === 'Helper') roleBadge = '<span class="badge badge-secondary">🤝 Helper</span>';
+
+                const perms = u.permissions || {};
+                const permKeys = ['canEditProducts', 'canEditPurchases', 'canEditSales', 'canEditDrums', 'canEditStores', 'canEditDaily', 'canEditStaff', 'canResetDatabase'];
+                const activePermsCount = isOwner ? 8 : permKeys.filter(k => perms[k] === true).length;
+
+                let permsBadge = `<button class="btn btn-secondary btn-sm" onclick="app.openApprovedOperationsModal('${u.id}')" style="font-size: 0.74rem; padding: 3px 8px;">⚙️ ${activePermsCount}/8 Operations</button>`;
+                if (isOwner) {
+                    permsBadge = `<span class="badge badge-success" style="font-size: 0.72rem;">✓ Full Master Control</span>`;
+                }
+
+                // Security Violation Alerts Badge
+                const attempts = u.unauthorizedAttempts || [];
+                const totalAttempts = attempts.length || (u.totalUnauthorizedCount || 0);
+                let redAlertSymbol = '';
+                if (totalAttempts > 0) {
+                    redAlertSymbol = `
+                        <button type="button" class="badge-alert-btn" onclick="app.openUnauthorizedAttemptsModal('${u.id}')" title="Security Alert: ${totalAttempts} unauthorized edit attempt(s)! Click to view breakdown by section">
+                            🚨 <span class="alert-count">${totalAttempts} ${totalAttempts === 1 ? 'Alert' : 'Alerts'}</span>
+                        </button>
+                    `;
+                }
+
+                let actionHtml = '';
+                if (isOwner) {
+                    actionHtml = `
+                        <span class="badge badge-owner" style="font-size: 0.72rem; padding: 4px 8px;">🔒 Permanent Owner</span>
+                    `;
+                } else {
+                    actionHtml = `
+                        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                            <button class="btn btn-purple btn-sm" onclick="app.openApprovedOperationsModal('${u.id}')" title="Configure Approved Operations">⚙️ Operations</button>
+                            <button class="btn btn-secondary btn-sm" onclick="app.openChangePasswordModal('${u.id}')">🔑 Password</button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="app.deleteUserAccount('${u.id}')" title="Delete User">🗑️</button>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <strong class="user-name-cell" onclick="app.openApprovedOperationsModal('${u.id}')" title="Click to view & edit approved operations" style="color: #f8fafc; cursor: pointer;">${u.email}</strong>
+                                ${redAlertSymbol}
+                            </div>
+                            ${isOwner ? '<span style="color: #fbbf24; font-size: 0.75rem; display: block;">(Primary Account Owner)</span>' : ''}
+                        </td>
+                        <td>
+                            <span class="user-name-cell" onclick="app.openApprovedOperationsModal('${u.id}')" title="Click to view & edit approved operations" style="cursor: pointer;">${u.name || 'Authorized User'}</span>
+                        </td>
+                        <td>${roleBadge}</td>
+                        <td>${permsBadge}</td>
+                        <td>${u.createdAt || 'System Start'}</td>
+                        <td>${actionHtml}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    }
+
+    // ==========================================
+    // UNAUTHORIZED EDIT ATTEMPTS VIEWER
+    // ==========================================
+    openUnauthorizedAttemptsModal(userId) {
+        const user = this.store.getUser(userId);
+        if (!user) return;
+
+        this.selectedAttemptUserId = userId;
+
+        const emailEl = document.getElementById('attemptsModalUserEmail');
+        const nameEl = document.getElementById('attemptsModalUserName');
+        const totalCountEl = document.getElementById('attemptsModalTotalCount');
+        const breakdownEl = document.getElementById('attemptsSectionBreakdown');
+        const historyEl = document.getElementById('attemptsDetailedHistory');
+
+        if (emailEl) emailEl.textContent = user.email;
+        if (nameEl) nameEl.textContent = user.name || user.role || 'User';
+
+        const attempts = user.unauthorizedAttempts || [];
+        const totalCount = attempts.length || (user.totalUnauthorizedCount || 0);
+        if (totalCountEl) totalCountEl.textContent = `${totalCount} ${totalCount === 1 ? 'Attempt' : 'Attempts'} Logged`;
+
+        // Compute breakdown per section
+        const counts = user.attemptCountsBySection || {};
+        if (attempts.length > 0 && Object.keys(counts).length === 0) {
+            attempts.forEach(a => {
+                const sec = a.section || 'Restricted Section';
+                counts[sec] = (counts[sec] || 0) + 1;
+            });
+        }
+
+        const sectionEntries = Object.entries(counts);
+        if (breakdownEl) {
+            if (sectionEntries.length === 0) {
+                breakdownEl.innerHTML = `
+                    <div style="padding: 12px; color: var(--text-muted); font-size: 0.82rem; text-align: center;">
+                        No recorded edit attempt violations for this user.
+                    </div>
+                `;
+            } else {
+                breakdownEl.innerHTML = sectionEntries.map(([sec, count]) => {
+                    const percent = Math.round((count / (totalCount || 1)) * 100);
+                    return `
+                        <div class="attempt-section-card">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 1.1rem; color: #ef4444;">⛔</span>
+                                <div>
+                                    <div style="font-weight: 700; color: #f8fafc; font-size: 0.88rem;">${sec}</div>
+                                    <div style="font-size: 0.72rem; color: var(--text-secondary);">${percent}% of total violation attempts</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="badge badge-danger" style="font-size: 0.82rem; padding: 4px 10px; font-weight: 800;">
+                                    ${count} ${count === 1 ? 'time' : 'times'} tried
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Render detailed chronological history
+        if (historyEl) {
+            if (attempts.length === 0) {
+                historyEl.innerHTML = `
+                    <div style="padding: 14px; color: var(--text-muted); font-size: 0.82rem; text-align: center;">
+                        No detailed log entries recorded.
+                    </div>
+                `;
+            } else {
+                historyEl.innerHTML = attempts.map(a => `
+                    <div class="attempt-log-row">
+                        <div>
+                            <div style="color: #fca5a5; font-weight: 700;">⛔ Tried to edit: <span style="color: #ffffff;">${a.section}</span></div>
+                            <div style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 1px;">Action: ${a.action || 'Unauthorized Edit'}</div>
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-align: right; white-space: nowrap;">
+                            📅 ${a.timestamp}
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        this.openModal('unauthorizedAttemptsModal');
+    }
+
+    clearUserAttempts() {
+        if (!this.selectedAttemptUserId) return;
+        this.store.clearUnauthorizedAttempts(this.selectedAttemptUserId);
+        this.showToast('✅ Security violation logs cleared for user.', 'info');
+        this.openUnauthorizedAttemptsModal(this.selectedAttemptUserId);
+        this.renderAdminSection();
+    }
+
+    openApprovedOperationsModalFromAttempts() {
+        const uid = this.selectedAttemptUserId;
+        this.closeModal('unauthorizedAttemptsModal');
+        if (uid) {
+            this.openApprovedOperationsModal(uid);
+        }
+    }
+
+    // ==========================================
+    // APPROVED OPERATIONS (GRANULAR PERMISSIONS)
+    // ==========================================
+    openApprovedOperationsModal(userId) {
+        const user = this.store.getUser(userId);
+        if (!user) return;
+
+        document.getElementById('opUserId').value = user.id;
+        document.getElementById('opUserEmail').textContent = user.email;
+        document.getElementById('opUserName').textContent = user.name || user.email.split('@')[0];
+        
+        const roleSelect = document.getElementById('opUserRole');
+        if (roleSelect) {
+            roleSelect.value = user.role || (user.isPermanentOwner ? 'Co-Administrator' : 'Staff');
+        }
+
+        const perms = user.permissions || this.store.getDefaultPermissions(user.role);
+
+        const setChecked = (id, val) => {
+            const cb = document.getElementById(id);
+            if (cb) cb.checked = !!val;
+        };
+
+        setChecked('perm_canEditProducts', perms.canEditProducts);
+        setChecked('perm_canEditPurchases', perms.canEditPurchases);
+        setChecked('perm_canEditSales', perms.canEditSales);
+        setChecked('perm_canEditDrums', perms.canEditDrums);
+        setChecked('perm_canEditStores', perms.canEditStores);
+        setChecked('perm_canEditDaily', perms.canEditDaily);
+        setChecked('perm_canEditStaff', perms.canEditStaff);
+        setChecked('perm_canResetDatabase', perms.canResetDatabase);
+
+        this.openModal('approvedOperationsModal');
+    }
+
+    onRoleChangeInPermissionsModal() {
+        const role = document.getElementById('opUserRole')?.value || 'Staff';
+        const defaults = this.store.getDefaultPermissions(role);
+        
+        const setChecked = (id, val) => {
+            const cb = document.getElementById(id);
+            if (cb) cb.checked = !!val;
+        };
+
+        setChecked('perm_canEditProducts', defaults.canEditProducts);
+        setChecked('perm_canEditPurchases', defaults.canEditPurchases);
+        setChecked('perm_canEditSales', defaults.canEditSales);
+        setChecked('perm_canEditDrums', defaults.canEditDrums);
+        setChecked('perm_canEditStores', defaults.canEditStores);
+        setChecked('perm_canEditDaily', defaults.canEditDaily);
+        setChecked('perm_canEditStaff', defaults.canEditStaff);
+        setChecked('perm_canResetDatabase', defaults.canResetDatabase);
+    }
+
+    setAllPermissions(enabled) {
+        ['perm_canEditProducts', 'perm_canEditPurchases', 'perm_canEditSales', 'perm_canEditDrums', 'perm_canEditStores', 'perm_canEditDaily', 'perm_canEditStaff', 'perm_canResetDatabase'].forEach(id => {
+            const cb = document.getElementById(id);
+            if (cb) cb.checked = enabled;
+        });
+    }
+
+    handleSaveApprovedOperations(e) {
+        e.preventDefault();
+        const userId = document.getElementById('opUserId')?.value;
+        const user = this.store.getUser(userId);
+        if (!user) return;
+
+        const newRole = document.getElementById('opUserRole')?.value || user.role;
+        const newPerms = {
+            canEditProducts: !!document.getElementById('perm_canEditProducts')?.checked,
+            canEditPurchases: !!document.getElementById('perm_canEditPurchases')?.checked,
+            canEditSales: !!document.getElementById('perm_canEditSales')?.checked,
+            canEditDrums: !!document.getElementById('perm_canEditDrums')?.checked,
+            canEditStores: !!document.getElementById('perm_canEditStores')?.checked,
+            canEditDaily: !!document.getElementById('perm_canEditDaily')?.checked,
+            canEditStaff: !!document.getElementById('perm_canEditStaff')?.checked,
+            canResetDatabase: !!document.getElementById('perm_canResetDatabase')?.checked
+        };
+
+        this.store.updateUser(userId, {
+            role: newRole,
+            permissions: newPerms
+        });
+
+        // If currently logged in as this user, refresh active session
+        if (this.currentUser && this.currentUser.id === userId) {
+            this.currentUser.role = newRole;
+            this.currentUser.permissions = newPerms;
+            localStorage.setItem('aquatrack_session_user', JSON.stringify(this.currentUser));
+            this.updateTopbarUserChip();
+        }
+
+        this.closeModal('approvedOperationsModal');
+        this.showToast(`✅ Saved Approved Operations for ${user.email}!`, 'success');
+        this.renderAdminSection();
+    }
+
+    // Handlers for Master Passwords Configuration (Protected by Super Admin Password)
+    handleUpdateResetPassword(e) {
+        e.preventDefault();
+        const input = document.getElementById('newResetPasswordInput');
+        const authInput = document.getElementById('authSuperAdminPassForReset');
+        const newPass = input ? input.value.trim() : '';
+        const authPass = authInput ? authInput.value.trim() : '';
+        if (!newPass) return;
+
+        if (!this.store.verifySuperAdminLoginPassword(authPass)) {
+            this.showToast('❌ Incorrect Super Admin Password! Change denied.', 'error');
+            return;
+        }
+
+        this.store.updateSecuritySettings({ resetToZeroPassword: newPass });
+        if (input) input.value = '';
+        if (authInput) authInput.value = '';
+        this.showToast('✅ Reset to 0 Password updated successfully!', 'success');
+        this.renderAdminSection();
+    }
+
+    handleUpdateAdminSectionPassword(e) {
+        e.preventDefault();
+        const input = document.getElementById('newAdminSectionPasswordInput');
+        const authInput = document.getElementById('authSuperAdminPassForAdminSection');
+        const newPass = input ? input.value.trim() : '';
+        const authPass = authInput ? authInput.value.trim() : '';
+        if (!newPass) return;
+
+        if (!this.store.verifySuperAdminLoginPassword(authPass)) {
+            this.showToast('❌ Incorrect Super Admin Password! Change denied.', 'error');
+            return;
+        }
+
+        this.store.updateSecuritySettings({ adminSectionPassword: newPass });
+        if (input) input.value = '';
+        if (authInput) authInput.value = '';
+        this.showToast('✅ Admin Section Password updated successfully!', 'success');
+        this.renderAdminSection();
+    }
+
+    handleUpdateSuperAdminEmailPassword(e) {
+        e.preventDefault();
+        const input = document.getElementById('newSuperAdminEmailPasswordInput');
+        const authInput = document.getElementById('authSuperAdminPassForEmail');
+        const newPass = input ? input.value.trim() : '';
+        const authPass = authInput ? authInput.value.trim() : '';
+        if (!newPass) return;
+
+        if (!this.store.verifySuperAdminLoginPassword(authPass)) {
+            this.showToast('❌ Incorrect Super Admin Password! Change denied.', 'error');
+            return;
+        }
+
+        this.store.updateSecuritySettings({ superAdminEmailPassword: newPass });
+        if (input) input.value = '';
+        if (authInput) authInput.value = '';
+        this.showToast('✅ Owner Email Login Password updated successfully!', 'success');
+        this.renderAdminSection();
+    }
+
+    approveRequest(reqId, role = 'Staff') {
+        const req = (this.store.getAccessRequests() || []).find(r => r.id === reqId);
+        if (!req) return;
+
+        const defaultPass = 'pass123';
+        this.store.addUser({
+            email: req.email,
+            name: req.name || req.email.split('@')[0],
+            password: defaultPass,
+            role: role,
+            status: 'approved',
+            isPermanentOwner: false,
+            createdAt: new Date().toISOString().split('T')[0]
+        });
+
+        this.store.deleteAccessRequest(reqId);
+        this.showToast(`✅ Approved ${req.email} as ${role}! Default Password: ${defaultPass}`, 'success');
+        this.renderAdminSection();
+    }
+
+    rejectRequest(reqId) {
+        if (!confirm('Reject and delete this access request?')) return;
+        this.store.deleteAccessRequest(reqId);
+        this.showToast('Access request rejected.', 'info');
+        this.renderAdminSection();
+    }
+
+    toggleUserAdminRole(userId) {
+        const user = this.store.getUser(userId);
+        if (!user) return;
+        if (user.isPermanentOwner) {
+            this.showToast('⚠️ The Super Admin (Owner) cannot be demoted or removed.', 'warning');
+            return;
+        }
+
+        const newRole = user.role === 'Admin' ? 'Staff' : 'Admin';
+        this.store.updateUser(userId, { role: newRole });
+        this.showToast(`Updated ${user.email} role to: ${newRole}`, 'success');
+        this.renderAdminSection();
+        this.updateTopbarUserChip();
+    }
+
+    deleteUserAccount(userId) {
+        const user = this.store.getUser(userId);
+        if (!user) return;
+        if (user.isPermanentOwner) {
+            this.showToast('⚠️ The Super Admin (Owner) account cannot be removed.', 'warning');
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to revoke access and delete account: ${user.email}?`)) return;
+        this.store.deleteUser(userId);
+        this.showToast(`User ${user.email} removed from access list.`, 'info');
+        this.renderAdminSection();
+    }
+
+    openAddUserModal() {
+        document.getElementById('addUserForm')?.reset();
+        this.openModal('addUserModal');
+    }
+
+    handleAddUserSubmit(e) {
+        e.preventDefault();
+        const email = document.getElementById('newAccEmail')?.value.trim();
+        const name = document.getElementById('newAccName')?.value.trim();
+        const password = document.getElementById('newAccPassword')?.value.trim();
+        const role = document.getElementById('newAccRole')?.value || 'Staff';
+
+        if (!email || !password) return;
+
+        const existing = this.store.getUserByEmail(email);
+        if (existing) {
+            this.showToast('⚠️ A user with this email is already authorized.', 'warning');
+            return;
+        }
+
+        this.store.addUser({
+            email: email,
+            name: name || email.split('@')[0],
+            password: password,
+            role: role,
+            status: 'approved',
+            isPermanentOwner: false,
+            createdAt: new Date().toISOString().split('T')[0]
+        });
+
+        // Also remove from pending requests if present
+        const req = (this.store.getAccessRequests() || []).find(r => r.email.toLowerCase() === email.toLowerCase());
+        if (req) this.store.deleteAccessRequest(req.id);
+
+        this.closeModal('addUserModal');
+        this.showToast(`Authorized new user: ${email} (${role})!`, 'success');
+        this.renderAdminSection();
+    }
+
+    openChangePasswordModal(userId) {
+        const user = this.store.getUser(userId);
+        if (!user) return;
+        document.getElementById('changePasswordForm')?.reset();
+        document.getElementById('changePassUserId').value = user.id;
+        document.getElementById('changePassUserEmail').textContent = user.email;
+        this.openModal('changePasswordModal');
+    }
+
+    handleChangePasswordSubmit(e) {
+        e.preventDefault();
+        const userId = document.getElementById('changePassUserId')?.value;
+        const newPass = document.getElementById('newPasswordInput')?.value.trim();
+        if (!userId || !newPass) return;
+
+        this.store.updateUser(userId, { password: newPass });
+        this.closeModal('changePasswordModal');
+        this.showToast('Password updated successfully!', 'success');
+        this.renderAdminSection();
     }
 
     // ==========================================
@@ -3490,6 +4512,10 @@ if (typeof window !== 'undefined') {
             var el = document.getElementById(id);
             if (el) { el.classList.add('active'); el.style.display = 'flex'; }
         }
+    };
+
+    window.openRequestAccessModal = function(email) {
+        if (window.app && window.app.openRequestAccessModal) window.app.openRequestAccessModal(email);
     };
 
     // Immediately instantiate if DOM is already loaded, or on DOMContentLoaded

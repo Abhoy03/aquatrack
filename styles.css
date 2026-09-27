@@ -1161,12 +1161,12 @@ tr:hover td {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(10px);
   display: none;
   align-items: flex-start;
   justify-content: center;
-  z-index: 100;
+  z-index: 20000;
   padding: 16px;
   overflow-y: auto;
 }
@@ -1355,7 +1355,7 @@ input:focus, select:focus, textarea:focus {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  z-index: 300;
+  z-index: 30000;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1760,9 +1760,329 @@ select option, select optgroup {
     padding: 5px 8px;
     font-size: 0.75rem;
   }
+  .topbar-user-chip {
+    font-size: 0.72rem;
+    padding: 3px 8px;
+  }
+  .topbar-user-chip span#topbarUserEmail {
+    max-width: 90px !important;
+  }
 }
 
+/* ==========================================
+   LANDING PAGE AUTHENTICATION OVERLAY
+========================================== */
+.landing-auth-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at top right, rgba(2, 132, 199, 0.25), transparent 45%),
+              radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.2), transparent 45%),
+              #070d18;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(24px);
+  overflow-y: auto;
+  transition: all 0.4s ease;
+}
 
+[data-theme="light"] .landing-auth-overlay {
+  background: radial-gradient(circle at top right, rgba(2, 132, 199, 0.15), transparent 50%),
+              radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.1), transparent 50%),
+              #f1f5f9;
+}
 
+.landing-auth-card {
+  width: 100%;
+  max-width: 480px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 35px rgba(56, 189, 248, 0.15);
+  padding: 36px 32px;
+  position: relative;
+  backdrop-filter: blur(20px);
+  animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
+[data-theme="light"] .landing-auth-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(2, 132, 199, 0.3);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+}
+
+.landing-brand-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.landing-brand-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  background: linear-gradient(135deg, #0284c7 0%, #38bdf8 50%, #818cf8 100%);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.4);
+  margin-bottom: 12px;
+}
+
+.landing-brand-logo svg {
+  width: 32px;
+  height: 32px;
+  stroke: #ffffff;
+}
+
+.landing-title {
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #ffffff 0%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0 0 6px 0;
+}
+
+[data-theme="light"] .landing-title {
+  background: linear-gradient(135deg, #0f172a 0%, #0284c7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.landing-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.admin-approved-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #38bdf8;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-top: 10px;
+}
+
+.landing-notice-box {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.8rem;
+  color: #f59e0b;
+  line-height: 1.4;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* User & Admin Control Center */
+.admin-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 20px;
+}
+
+.admin-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.badge-owner {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(234, 179, 8, 0.3));
+  border: 1px solid #f59e0b;
+  color: #fbbf24;
+}
+
+.topbar-user-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-color);
+  border-radius: 9999px;
+  padding: 5px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pending-request-card {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.operations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.op-checkbox-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.op-checkbox-card:hover {
+  background: rgba(56, 189, 248, 0.06);
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.op-checkbox-card input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: #0284c7;
+  flex-shrink: 0;
+}
+
+.op-checkbox-card .op-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.op-checkbox-card .op-name {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+}
+
+.op-checkbox-card .op-desc {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.user-name-cell {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.user-name-cell:hover {
+  color: #38bdf8 !important;
+  text-decoration: underline;
+}
+
+/* ==========================================
+   SECURITY RED ALERT BADGE & VIOLATION LOGS
+   ========================================== */
+.badge-alert-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.6);
+  color: #fca5a5;
+  font-size: 0.73rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.25);
+  animation: pulse-red-alert 2s infinite ease-in-out;
+}
+
+@keyframes pulse-red-alert {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.badge-alert-btn:hover {
+  background: rgba(239, 68, 68, 0.35);
+  border-color: #ef4444;
+  color: #ffffff;
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.65);
+}
+
+.badge-alert-btn .alert-count {
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.attempt-section-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 9px 14px;
+  margin-bottom: 7px;
+  transition: all 0.15s ease;
+}
+
+.attempt-section-card:hover {
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.attempt-log-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.8rem;
+  transition: background 0.15s ease;
+}
+
+.attempt-log-row:hover {
+  background: rgba(239, 68, 68, 0.04);
+}
+
+.attempt-log-row:last-child {
+  border-bottom: none;
+}
 

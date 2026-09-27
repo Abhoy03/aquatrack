@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260927_3">
+    <link rel="stylesheet" href="styles.css?v=20260927_17">
 </head>
 <body>
     <!-- Sidebar Backdrop for Mobile -->
@@ -64,6 +64,10 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21H3V3"/><path d="M18 9l-5 5-4-4-6 6"/><circle cx="18" cy="9" r="2"/><circle cx="13" cy="14" r="2"/><circle cx="9" cy="10" r="2"/></svg>
                 <span>Product Analytics</span>
             </a>
+            <a href="#" class="nav-item" data-section="admin" id="nav-admin" style="border-left: 3px solid #f59e0b;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span>Admin & Security</span>
+            </a>
         </nav>
         
         <div class="sidebar-footer">
@@ -99,8 +103,15 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5V19M5 12H19"/></svg>
                     + Drum Order
                 </button>
-                <button class="btn btn-outline-danger btn-sm" id="resetAllBtn" onclick="app.openResetModal()" title="Reset all data to 0">🔄 Reset to 0</button>
+                <button class="btn btn-outline-danger btn-sm" id="resetAllBtn" onclick="app.openResetModal()" title="Reset all data to 0 (Password Protected)">🔄 Reset to 0</button>
                 <button class="icon-btn" id="themeToggle" onclick="app.toggleTheme()" title="Toggle Dark/Light Mode">🌙</button>
+                
+                <div class="topbar-user-chip" id="topbarUserChip">
+                    <span>👤</span>
+                    <span id="topbarUserEmail" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">admin@aquatrack.com</span>
+                    <span class="badge badge-owner" id="topbarUserRole" style="font-size: 0.68rem; padding: 2px 6px;">Super Admin</span>
+                    <button class="btn btn-secondary btn-sm" onclick="app.logout()" style="padding: 3px 8px; font-size: 0.72rem; margin-left: 4px;" title="Logout">🚪 Logout</button>
+                </div>
             </div>
         </header>
 
@@ -808,6 +819,206 @@
 
             </section>
 
+            <!-- SECTION 9: ADMIN & SECURITY MANAGEMENT -->
+            <section class="app-section" id="section-admin">
+                <div class="quick-banner" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%); border-color: rgba(245, 158, 11, 0.35);">
+                    <div class="quick-banner-text">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <h3 style="margin: 0; color: #fbbf24;">🛡️ Admin & Security Command Center</h3>
+                            <span class="badge badge-owner">👑 Super Admin Master Console</span>
+                        </div>
+                        <p style="color: var(--text-secondary); margin-top: 4px;">
+                            Manage authorized user emails, approve/reject pending staff requests, promote/demote administrators, and enforce security policies.
+                        </p>
+                    </div>
+                    <div class="quick-banner-actions">
+                        <button class="btn btn-success btn-sm" onclick="app.openAddUserModal()">+ Authorize New User</button>
+                    </div>
+                </div>
+
+                <!-- 4 KPI Tiles -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-header">
+                            <span class="kpi-title">Total Approved Users</span>
+                            <span class="kpi-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">👥</span>
+                        </div>
+                        <div class="kpi-value" id="adminKpiTotalUsers">1</div>
+                        <div class="kpi-subtext">Active authorized accounts</div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-header">
+                            <span class="kpi-title">Active Administrators</span>
+                            <span class="kpi-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">🛡️</span>
+                        </div>
+                        <div class="kpi-value" id="adminKpiTotalAdmins" style="color: #f59e0b;">1</div>
+                        <div class="kpi-subtext">Full system control privileges</div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-header">
+                            <span class="kpi-title">Pending Access Approvals</span>
+                            <span class="kpi-icon" style="background: rgba(168, 85, 247, 0.15); color: #a855f7;">⏳</span>
+                        </div>
+                        <div class="kpi-value" id="adminKpiPendingRequests" style="color: #a855f7;">0</div>
+                        <div class="kpi-subtext">Waiting for your approval</div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-header">
+                            <span class="kpi-title">Owner Account Protection</span>
+                            <span class="kpi-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">🔒</span>
+                        </div>
+                        <div class="kpi-value" style="color: #10b981; font-size: 1.25rem;">PERMANENT</div>
+                        <div class="kpi-subtext">Cannot be deleted or removed</div>
+                    </div>
+                </div>
+
+                <!-- Pending Approvals Section -->
+                <div class="admin-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <h4 style="margin: 0; font-size: 1.05rem; color: #fbbf24;">⏳ Pending Access Requests</h4>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">Users waiting for admin approval before they can enter AquaTrack Pro</div>
+                        </div>
+                    </div>
+                    <div id="adminPendingRequestsContainer">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+
+                <!-- User Management Table Section -->
+                <div class="admin-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <h4 style="margin: 0; font-size: 1.05rem; color: #38bdf8;">👥 Authorized Accounts & Access Control</h4>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">Grant Admin privileges, demote, change passwords, or revoke access</div>
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="app.openAddUserModal()">+ Authorize New User</button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>User / Email</th>
+                                    <th>Display Name</th>
+                                    <th>Access Role</th>
+                                    <th>Status</th>
+                                    <th>Added On</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminUsersTableBody">
+                                <!-- Rendered dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 3 MASTER PASSWORD CONFIGURATION CARDS -->
+                <div class="admin-card" style="border: 1px solid rgba(168, 85, 247, 0.35); background: rgba(168, 85, 247, 0.04);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <h4 style="margin: 0; font-size: 1.1rem; color: #c084fc; display: flex; align-items: center; gap: 8px;">
+                                <span>🔐 Security & Master Passwords Configuration</span>
+                                <span class="badge badge-purple" style="font-size: 0.72rem;">3 Independent Passwords</span>
+                            </h4>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
+                                Independently configure and change passwords. Changes require authorization with your Super Admin Login Password.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+                        <!-- CARD 1: Reset to 0 Password -->
+                        <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <strong style="color: #f87171; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                                        <span>🔄</span> 1. Reset to 0 Password
+                                    </strong>
+                                    <span class="badge badge-danger" style="font-size: 0.7rem;">Database Safety</span>
+                                </div>
+                                <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px;">
+                                    Required whenever anyone clicks the "🔄 Reset to 0" button to prevent unauthorized data wipes.
+                                </p>
+                            </div>
+                            <form onsubmit="app.handleUpdateResetPassword(event)">
+                                <div class="form-group" style="margin-bottom: 10px;">
+                                    <label style="font-size: 0.75rem;">New Reset to 0 Password *</label>
+                                    <input type="password" id="newResetPasswordInput" placeholder="Enter new reset password" required style="font-size: 0.88rem; padding: 8px 10px;">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 12px;">
+                                    <label style="font-size: 0.75rem; color: #fbbf24;">Current Super Admin Password *</label>
+                                    <input type="password" id="authSuperAdminPassForReset" placeholder="Enter owner password to authorize" required style="font-size: 0.88rem; padding: 8px 10px;">
+                                </div>
+                                <button type="submit" class="btn btn-outline-danger btn-sm" style="width: 100%;">
+                                    💾 Save Reset to 0 Password
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- CARD 2: Admin Section Password -->
+                        <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <strong style="color: #fbbf24; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                                        <span>🛡️</span> 2. Admin Section Password
+                                    </strong>
+                                    <span class="badge badge-warning" style="font-size: 0.7rem;">Sidebar Access</span>
+                                </div>
+                                <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px;">
+                                    Prompted every time anyone (including you and other viewers) taps "Admin & Security" in the left sidebar.
+                                </p>
+                            </div>
+                            <form onsubmit="app.handleUpdateAdminSectionPassword(event)">
+                                <div class="form-group" style="margin-bottom: 10px;">
+                                    <label style="font-size: 0.75rem;">New Admin Section Password *</label>
+                                    <input type="password" id="newAdminSectionPasswordInput" placeholder="Enter new admin section password" required style="font-size: 0.88rem; padding: 8px 10px;">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 12px;">
+                                    <label style="font-size: 0.75rem; color: #fbbf24;">Current Super Admin Password *</label>
+                                    <input type="password" id="authSuperAdminPassForAdminSection" placeholder="Enter owner password to authorize" required style="font-size: 0.88rem; padding: 8px 10px;">
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm" style="width: 100%; background: linear-gradient(135deg, #f59e0b, #d97706); border-color: transparent;">
+                                    💾 Save Admin Section Password
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- CARD 3: Super Admin Email Password -->
+                        <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <strong style="color: #38bdf8; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                                        <span>👤</span> 3. My Email Login Password
+                                    </strong>
+                                    <span class="badge badge-primary" style="font-size: 0.7rem;">Owner Login</span>
+                                </div>
+                                <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px;">
+                                    The login password for your primary owner email account (<strong style="color:#38bdf8;">admin@aquatrack.com</strong>).
+                                </p>
+                            </div>
+                            <form onsubmit="app.handleUpdateSuperAdminEmailPassword(event)">
+                                <div class="form-group" style="margin-bottom: 10px;">
+                                    <label style="font-size: 0.75rem;">New Email Login Password *</label>
+                                    <input type="password" id="newSuperAdminEmailPasswordInput" placeholder="Enter new email login password" required style="font-size: 0.88rem; padding: 8px 10px;">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 12px;">
+                                    <label style="font-size: 0.75rem; color: #fbbf24;">Current Super Admin Password *</label>
+                                    <input type="password" id="authSuperAdminPassForEmail" placeholder="Enter current owner password" required style="font-size: 0.88rem; padding: 8px 10px;">
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm" style="width: 100%;">
+                                    💾 Save Email Login Password
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
         </main>
     </div>
 
@@ -1338,6 +1549,15 @@
                 <p style="font-size: 0.95rem; line-height: 1.6;">
                     Choose how you would like to reset your system to <strong>0</strong>:
                 </p>
+
+                <div class="form-group" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px;">
+                    <label style="color: #f87171; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                        🔒 Enter Admin Password to Authorize Reset *
+                    </label>
+                    <input type="password" id="resetAdminPasswordInput" placeholder="Enter Reset to 0 Password" autocomplete="current-password" style="margin-top: 6px; font-size: 0.92rem;">
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Only verified administrators can reset databases to zero.</div>
+                </div>
+
                 <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
                     <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 14px;">
                         <h4 style="color: #f87171; font-size: 0.95rem; margin-bottom: 4px;">Option 1: Clean Fresh Start (Recommended)</h4>
@@ -1634,10 +1854,418 @@
         </div>
     </div>
 
+    <!-- MODAL: ADMIN SECTION AUTHENTICATION -->
+    <div class="modal-overlay" id="adminSectionAuthModal">
+        <div class="modal-box" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: #fbbf24; display: flex; align-items: center; gap: 6px;">
+                    <span>🔒</span> Admin Section Password Protected
+                </h3>
+                <button class="close-btn" onclick="app.closeModal('adminSectionAuthModal')">&times;</button>
+            </div>
+            <form id="adminSectionAuthForm" onsubmit="app.handleAdminSectionAuthSubmit(event)">
+                <div class="modal-body">
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.45;">
+                        This area is password protected for all viewers and administrators. Enter the <strong>Admin Section Password</strong> to unlock:
+                    </p>
+                    <div class="form-group">
+                        <label>Admin Section Password *</label>
+                        <input type="password" id="adminSectionPassInput" placeholder="Enter Admin Section Password" required autocomplete="current-password">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('adminSectionAuthModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #f59e0b, #d97706); border-color: transparent;">
+                        🔓 Unlock Admin Console
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         LANDING PAGE: ADMIN APPROVED ACCESS GATEWAY
+    ========================================== -->
+    <div class="landing-auth-overlay" id="landingAuthOverlay" style="display: none;">
+        <div class="landing-auth-card">
+            <div class="landing-brand-header">
+                <div class="landing-brand-logo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                </div>
+                <h1 class="landing-title">AquaTrack Pro</h1>
+                <p class="landing-subtitle">Water & Beverage Enterprise Distribution ERP</p>
+                <div class="admin-approved-pill">
+                    <span>🛡️ ADMIN APPROVED ACCESS ONLY</span>
+                </div>
+            </div>
+
+            <div class="landing-notice-box">
+                <span style="font-size: 1.1rem;">🔒</span>
+                <div>
+                    <strong>Authorized Personnel Only:</strong> Access requires an email address and password approved by the Administrator. Unapproved emails will be queued for admin authorization.
+                </div>
+            </div>
+
+            <form id="landingLoginForm" onsubmit="app.handleLoginSubmit(event)">
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label style="font-weight: 700; color: #38bdf8;">Authorized Email Address *</label>
+                    <input type="email" id="loginEmail" placeholder="name@company.com" required autocomplete="email" style="font-size: 0.95rem; padding: 11px 14px;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 18px;">
+                    <label style="font-weight: 700; color: #38bdf8;">Access Password *</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password" style="font-size: 0.95rem; padding: 11px 14px;">
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 1rem; font-weight: 700; border-radius: 12px; box-shadow: 0 6px 20px rgba(2, 132, 199, 0.45);">
+                    🚀 Enter AquaTrack Portal
+                </button>
+            </form>
+
+            <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 0.8rem;">
+                <span style="color: var(--text-muted);">Need access permissions?</span>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="app.openRequestAccessModal()" style="font-size: 0.78rem;">
+                    📩 Request Admin Approval
+                </button>
+            </div>
+
+            <div style="margin-top: 14px; background: rgba(56, 189, 248, 0.06); border: 1px dashed rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 8px 12px; font-size: 0.76rem; color: var(--text-secondary); text-align: center;">
+                🔑 <strong>Super Admin (Owner):</strong> <code style="color:#38bdf8;">admin@aquatrack.com</code> &bull; Pass: <code style="color:#38bdf8;">admin123</code>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADMIN APPROVAL REQUIRED / PENDING NOTICE -->
+    <div class="modal-overlay" id="adminApprovalModal">
+        <div class="modal-box" style="max-width: 460px; text-align: center; padding: 28px 24px; border: 1px solid rgba(245, 158, 11, 0.4); box-shadow: 0 12px 35px rgba(0,0,0,0.65);">
+            <div style="font-size: 3.2rem; margin-bottom: 8px;">⏳</div>
+            <h3 style="color: #f59e0b; font-size: 1.35rem; font-weight: 800; margin-bottom: 8px;">Admin Approval Required</h3>
+            
+            <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 12px; padding: 18px; margin: 16px 0; text-align: center;">
+                <div style="font-size: 1.18rem; font-weight: 800; color: #fbbf24; margin-bottom: 8px; line-height: 1.4;">
+                    admin will approve your request kindly wait
+                </div>
+                <div style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.45;">
+                    Your ID (<strong id="pendingNoticeEmail" style="color:#f8fafc;"></strong>) has been queued. The administrator will review and authorize your account.
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 18px;">
+                <button type="button" class="btn btn-secondary" onclick="app.closeModal('adminApprovalModal')">Close</button>
+                <button type="button" class="btn btn-primary" onclick="app.closeModal('adminApprovalModal'); app.openRequestAccessModal(document.getElementById('loginEmail')?.value)">Send Direct Request 📩</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: NOT ELIGIBLE TO EDIT RED ALERT POPUP -->
+    <div class="modal-overlay" id="notEligibleEditModal">
+        <div class="modal-box" style="max-width: 440px; text-align: center; padding: 28px 22px; border: 2px solid #ef4444; box-shadow: 0 12px 35px rgba(239, 68, 68, 0.45); background: #131b2e;">
+            <div style="font-size: 3.4rem; margin-bottom: 10px;">⛔</div>
+            <h3 style="color: #ef4444; font-size: 1.35rem; font-weight: 800; margin-bottom: 6px; letter-spacing: 0.3px;">Access Restricted</h3>
+            
+            <div style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 12px; padding: 16px 18px; margin: 16px 0; text-align: center;">
+                <div style="font-size: 1.12rem; font-weight: 800; color: #fca5a5; margin-bottom: 8px; line-height: 1.4;">
+                    You are not eligible to edit!
+                </div>
+                <div style="font-size: 0.86rem; color: #fecaca; line-height: 1.45;">
+                    You are not allowed to edit in <strong id="notEligibleSectionName" style="color: #ffffff; text-decoration: underline;">this section</strong>.
+                </div>
+                <div style="font-size: 0.76rem; color: #f87171; margin-top: 10px; font-weight: 700; background: rgba(0,0,0,0.25); padding: 6px; border-radius: 6px;">
+                    🚨 A red alert notification has been sent to the Admin console.
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: center; margin-top: 18px;">
+                <button type="button" class="btn btn-danger" onclick="app.closeModal('notEligibleEditModal')" style="padding: 10px 28px; font-weight: 700; border-radius: 10px; font-size: 0.92rem;">
+                    Understood / Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADMIN VIEW UNAUTHORIZED EDIT ATTEMPTS LOG & BREAKDOWN -->
+    <div class="modal-overlay" id="unauthorizedAttemptsModal">
+        <div class="modal-box" style="max-width: 600px;">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(239, 68, 68, 0.35); padding-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.6rem;">🚨</span>
+                    <div>
+                        <h3 class="modal-title" style="color: #ef4444; font-size: 1.15rem; margin: 0; font-weight: 800;">Unauthorized Edit Attempts Log</h3>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
+                            User: <strong id="attemptsModalUserEmail" style="color: #38bdf8;"></strong> &bull; (<span id="attemptsModalUserName" style="color: #cbd5e1;"></span>)
+                        </div>
+                    </div>
+                </div>
+                <button class="close-btn" onclick="app.closeModal('unauthorizedAttemptsModal')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 18px 20px;">
+                <!-- KPI Header -->
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 12px 16px; margin-bottom: 18px;">
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Total Security Violations</div>
+                        <div style="font-size: 1.45rem; font-weight: 800; color: #ef4444;" id="attemptsModalTotalCount">0 Attempts</div>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="clearAttemptsBtn" onclick="app.clearUserAttempts()">
+                        🧹 Clear Alert Logs
+                    </button>
+                </div>
+
+                <!-- Section Breakdown -->
+                <h4 style="font-size: 0.88rem; color: #f8fafc; margin-bottom: 10px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                    <span>📊</span> Section Breakdown (Attempts per Section)
+                </h4>
+                <div id="attemptsSectionBreakdown" style="margin-bottom: 20px;">
+                    <!-- Dynamically rendered breakdown rows -->
+                </div>
+
+                <!-- Detailed Timeline History -->
+                <h4 style="font-size: 0.88rem; color: #f8fafc; margin-bottom: 8px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                    <span>🕒</span> Log History (Latest Attempts First)
+                </h4>
+                <div id="attemptsDetailedHistory" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(0,0,0,0.25);">
+                    <!-- Dynamically rendered history items -->
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                <button type="button" class="btn btn-secondary" onclick="app.closeModal('unauthorizedAttemptsModal')">Close</button>
+                <button type="button" class="btn btn-purple" id="attemptsModalEditPermsBtn" onclick="app.openApprovedOperationsModalFromAttempts()">⚙️ Edit Approved Operations</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: REQUEST ACCESS APPROVAL -->
+    <div class="modal-overlay" id="requestAccessModal">
+        <div class="modal-box" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3 class="modal-title">📩 Request System Access Approval</h3>
+                <button class="close-btn" onclick="app.closeModal('requestAccessModal')">&times;</button>
+            </div>
+            <form id="requestAccessForm" onsubmit="app.handleRequestAccessSubmit(event)">
+                <div class="modal-body">
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 14px;">
+                        Submit your email to the System Administrator for authorization. Once approved, you will be able to log in to AquaTrack Pro.
+                    </p>
+                    <div class="form-group">
+                        <label>Your Email Address *</label>
+                        <input type="email" id="reqEmail" placeholder="yourname@gmail.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Full Name *</label>
+                        <input type="text" id="reqName" placeholder="e.g. Rahul Sharma" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Desired Role / Position</label>
+                        <select id="reqRole">
+                            <option value="Staff">Delivery Staff / Helper</option>
+                            <option value="Driver">Truck / Delivery Driver</option>
+                            <option value="Manager">Store / Branch Manager</option>
+                            <option value="Admin">Co-Administrator</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Reason / Note for Administrator</label>
+                        <textarea id="reqNote" rows="2" placeholder="e.g. Requesting access for North Zone warehouse delivery tracking"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('requestAccessModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Request 🚀</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD APPROVED USER (ADMIN ONLY) -->
+    <div class="modal-overlay" id="addUserModal">
+        <div class="modal-box" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3 class="modal-title">👤 Authorize New Approved User</h3>
+                <button class="close-btn" onclick="app.closeModal('addUserModal')">&times;</button>
+            </div>
+            <form id="addUserForm" onsubmit="app.handleAddUserSubmit(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>User Email Address *</label>
+                        <input type="email" id="newAccEmail" placeholder="e.g. manager@aquatrack.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Full Name / Display Name *</label>
+                        <input type="text" id="newAccName" placeholder="e.g. Amit Kumar" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Set Access Password *</label>
+                        <input type="text" id="newAccPassword" placeholder="e.g. pass123" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Access Role / Category *</label>
+                        <select id="newAccRole" required>
+                            <option value="Co-Administrator">🛡️ Co-Administrator (Full Operations & Controls)</option>
+                            <option value="Driver">🚚 Driver (Deliveries, Sales & Drum Orders)</option>
+                            <option value="Helper">🤝 Helper (Deliveries & Assistance)</option>
+                            <option value="Staff">👤 Staff / Viewer (Customizable Operations)</option>
+                        </select>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+                            You can customize specific section edit checkboxes in "Approved Operations" anytime.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('addUserModal')">Cancel</button>
+                    <button type="submit" class="btn btn-success">+ Save & Authorize Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: CHANGE USER PASSWORD (ADMIN ONLY) -->
+    <div class="modal-overlay" id="changePasswordModal">
+        <div class="modal-box" style="max-width: 420px;">
+            <div class="modal-header">
+                <h3 class="modal-title">🔑 Change Account Password</h3>
+                <button class="close-btn" onclick="app.closeModal('changePasswordModal')">&times;</button>
+            </div>
+            <form id="changePasswordForm" onsubmit="app.handleChangePasswordSubmit(event)">
+                <input type="hidden" id="changePassUserId">
+                <div class="modal-body">
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
+                        Update access password for: <strong id="changePassUserEmail" style="color: #38bdf8;"></strong>
+                    </p>
+                    <div class="form-group">
+                        <label>New Password *</label>
+                        <input type="text" id="newPasswordInput" placeholder="Enter new password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('changePasswordModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Password ✓</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: APPROVED OPERATIONS & PERMISSIONS -->
+    <div class="modal-overlay" id="approvedOperationsModal">
+        <div class="modal-box" style="max-width: 620px;">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: #fbbf24; display: flex; align-items: center; gap: 8px;">
+                    <span>🛡️</span> Approved Operations & Permissions
+                </h3>
+                <button class="close-btn" onclick="app.closeModal('approvedOperationsModal')">&times;</button>
+            </div>
+            <form id="approvedOperationsForm" onsubmit="app.handleSaveApprovedOperations(event)">
+                <input type="hidden" id="opUserId">
+                <div class="modal-body">
+                    <!-- User Info Card -->
+                    <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <div style="font-weight: 700; color: #f8fafc; font-size: 1rem;" id="opUserEmail">user@example.com</div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);" id="opUserName">User</div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <label style="font-size: 0.8rem; margin: 0; white-space: nowrap;">Role Category:</label>
+                            <select id="opUserRole" onchange="app.onRoleChangeInPermissionsModal()" style="font-size: 0.82rem; padding: 5px 10px; border-radius: 6px;">
+                                <option value="Co-Administrator">🛡️ Co-Administrator</option>
+                                <option value="Driver">🚚 Driver</option>
+                                <option value="Helper">🤝 Helper</option>
+                                <option value="Staff">👤 Staff / Viewer</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
+                        <div>
+                            <strong style="color: #38bdf8; font-size: 0.95rem;">Approved Operations (Edit Privileges)</strong>
+                            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
+                                View access is open for all sections. Tick boxes below to authorize editing/creating in specific sections:
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="app.setAllPermissions(true)" style="font-size: 0.72rem; padding: 3px 8px;">✓ Select All</button>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="app.setAllPermissions(false)" style="font-size: 0.72rem; padding: 3px 8px;">✕ Clear All</button>
+                        </div>
+                    </div>
+
+                    <!-- Checklist Grid -->
+                    <div class="operations-grid">
+                        <label class="op-checkbox-card">
+                            <input type="checkbox" id="perm_canEditProducts">
+                            <div class="op-info">
+                                <span class="op-name">📦 Products & Stock</span>
+                                <span class="op-desc">Add/edit products, stock counts, pack sizes & bottle rates</span>
+                            </div>
+                        </label>
+
+                        <label class="op-checkbox-card">
+                            <input type="checkbox" id="perm_canEditPurchases">
+                            <div class="op-info">
+                                <span class="op-name">🏭 Factory Purchases</span>
+                                <span class="op-desc">Record factory arrivals, stock inflow batches & purchase costs</span>
+                            </div>
+                        </label>
+
+                        <label class="op-checkbox-card">
+                            <input type="checkbox" id="perm_canEditSales">
+                            <div class="op-info">
+                                <span class="op-name">💰 Store Sales & Outflow</span>
+                                <span class="op-desc">Create store sales bills, record crates, rates & profit margins</span>
+                            </div>
+                        </label>
+
+                        <label class="op-checkbox-card">
+                            <input type="checkbox" id="perm_canEditDrums">
+                            <div class="op-info">
+                                <span class="op-name">🛢️ 20L Water Drums</span>
+                                <span class="op-desc">Add drum orders, mark delivered & record empty drums returned</span>
+                            </div>
+                        </label>
+
+                        <label class="op-checkbox-card">
+                            <input type="checkbox" id="perm_canEditStores">
+                            <div class="op-info">
+                                <span class="op-name">🏪 Stores & Khata Ledger</span>
+                                <span class="op-desc">Register retail stores, edit contact info & record cash/UPI payments</span>
+                            </div>
+                        </label>
+
+                        <label class="op-checkbox-card">
+                            <input type="checkbox" id="perm_canEditDaily">
+                            <div class="op-info">
+                                <span class="op-name">📅 Daily Reports & Audit</span>
+                                <span class="op-desc">Audit day summaries, download PDF/Excel reports & settlements</span>
+                            </div>
+                        </label>
+
+                        <label class="op-checkbox-card">
+                            <input type="checkbox" id="perm_canEditStaff">
+                            <div class="op-info">
+                                <span class="op-name">🚚 Drivers & Staff Khata</span>
+                                <span class="op-desc">Record delivery trips, commission rate/box & monthly salary</span>
+                            </div>
+                        </label>
+
+                        <label class="op-checkbox-card">
+                            <input type="checkbox" id="perm_canResetDatabase">
+                            <div class="op-info">
+                                <span class="op-name">🔄 Reset to 0 Database</span>
+                                <span class="op-desc">Authorize data cleanups, stock resets to 0 & fresh starts</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('approvedOperationsModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); border-color: transparent;">
+                        💾 Save Approved Operations
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Toast Notification Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="app.js?v=20260927_10"></script>
+    <script src="app.js?v=20260927_17"></script>
     <script>
         // Universal modal closer & safety bridge
         document.addEventListener('click', function(e) {
