@@ -56,7 +56,20 @@ class DataStore {
         }
         if (!this.data.truckLogs) this.data.truckLogs = [];
         if (!this.data.users) this.data.users = [];
-        if (!this.data.accessRequests) this.data.accessRequests = [];
+        if (!Array.isArray(this.data.customCategories)) this.data.customCategories = [];
+        const removedCats = new Set(['filters', 'seals', 'jars', 'other']);
+        this.data.customCategories = this.data.customCategories.filter(c => !removedCats.has(c.id));
+        if (!Array.isArray(this.data.products)) this.data.products = [];
+        this.data.products.forEach(p => {
+            if (removedCats.has(p.category)) p.category = 'distinct';
+        });
+        if (!this.data.products.some(p => p.category === 'distinct')) {
+            this.data.products.push(
+                { id: 'p_filter', category: 'distinct', name: 'RO Filter Membrane 100 GPD', size: 'Standard', unitsPerBox: 1, buyPrice: 450.00, totalCost: 4500.00, sellPrice: 850.00, stock: 10 },
+                { id: 'p_seal', category: 'distinct', name: '20L Jar Cap Heat Shrink Seals', size: '1000 Pcs Pack', unitsPerBox: 1, buyPrice: 220.00, totalCost: 1100.00, sellPrice: 400.00, stock: 5 },
+                { id: 'p_jar', category: 'distinct', name: '20L Virgin Plastic Blue Jar', size: '20 Litre', unitsPerBox: 1, buyPrice: 110.00, totalCost: 5500.00, sellPrice: 180.00, stock: 50 }
+            );
+        }
 
         // Security & Independent Passwords Configuration
         if (!this.data.securitySettings) {
@@ -346,20 +359,111 @@ class DataStore {
         }
     }
 
-    // Purchases (Factory Inflow)
+    // Product Categories
+    getDefaultProductCategories() {
+        return [
+            { id: 'distinct', name: 'Distinct Item', shortName: 'Distinct Items', icon: '✨', isDistinct: true, isBuiltIn: true },
+            { id: 'water', name: 'Packaged Drinking Water Bottle', shortName: 'Water Bottles', icon: '💧', isBuiltIn: true },
+            { id: 'drinks', name: 'Cold Drink / Beverage', shortName: 'Cold Drinks', icon: '🥤', isBuiltIn: true },
+            { id: 'drums', name: '20L Drum Water', shortName: '20L Drums', icon: '🛢️', isBuiltIn: true }
+        ];
+    }
+
+    getProductCategories() {
+        if (!Array.isArray(this.data.customCategories)) {
+            this.data.customCategories = [];
+        }
+        if (!Array.isArray(this.data.deletedCategoryIds)) {
+            this.data.deletedCategoryIds = [];
+        }
+        const defaults = this.getDefaultProductCategories().filter(c => !this.data.deletedCategoryIds.includes(c.id));
+        const custom = this.data.customCategories.filter(c => !this.data.deletedCategoryIds.includes(c.id));
+        return [...defaults, ...custom];
+    }
+
+    addProductCategory(cat) {
+        if (!Array.isArray(this.data.customCategories)) {
+            this.data.customCategories = [];
+        }
+        if (!Array.isArray(this.data.deletedCategoryIds)) {
+            this.data.deletedCategoryIds = [];
+        }
+        const cleanName = (cat.name || 'Category').trim();
+        const slug = 'cat_' + cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 16) + '_' + Date.now().toString(36);
+        const newCat = {
+            id: slug,
+            name: cleanName,
+            shortName: (cat.shortName || cleanName).trim(),
+            icon: cat.icon || '🏷️',
+            isDistinct: !!cat.isDistinct,
+            isBuiltIn: false,
+            createdAt: new Date().toISOString()
+        };
+        this.data.customCategories.push(newCat);
+        // Ensure not in deleted list
+        this.data.deletedCategoryIds = this.data.deletedCategoryIds.filter(id => id !== slug);
+        this.save();
+        return newCat;
+    }
+
+    deleteProductCategory(id) {
+        if (!Array.isArray(this.data.customCategories)) this.data.customCategories = [];
+        if (!Array.isArray(this.data.deletedCategoryIds)) this.data.deletedCategoryIds = [];
+        this.data.customCategories = this.data.customCategories.filter(c => c.id !== id);
+        if (!this.data.deletedCategoryIds.includes(id)) {
+            this.data.deletedCategoryIds.push(id);
+        }
+        this.save();
+        return true;
+    }
+
+    restoreDefaultCategories() {
+        this.data.deletedCategoryIds = [];
+        this.save();
+        return true;
+    }
+
+    // Purchases (Company Procurement & Stock Inflow)
     getPurchases() { return this.data.purchases || []; }
     addPurchase(item) {
         item.id = 'pur_' + Date.now();
         if (!this.data.purchases) this.data.purchases = [];
         this.data.purchases.unshift(item);
-        this.adjustStock(item.productId, item.qty);
+
+        // Handle Stock Synchronization
+        if (item.productId && item.productId !== 'custom') {
+            this.adjustStock(item.productId, item.qty);
+        } else if (item.syncInventory && item.productName) {
+            // Find existing product with same name or create new in products list
+            let existingProd = (this.data.products || []).find(p => p.name.trim().toLowerCase() === item.productName.trim().toLowerCase());
+            if (existingProd) {
+                existingProd.stock = (existingProd.stock || 0) + (item.qty || 0);
+                item.productId = existingProd.id;
+            } else {
+                const newProd = {
+                    id: 'p_' + Date.now(),
+                    category: item.category || 'other',
+                    name: item.productName,
+                    size: item.unit || 'Unit',
+                    unitsPerBox: item.unitsPerBox || 1,
+                    buyPrice: item.rate || 0,
+                    sellPrice: item.sellPrice || (Math.round((item.rate || 0) * 1.35 * 100) / 100),
+                    stock: item.qty || 0
+                };
+                if (!this.data.products) this.data.products = [];
+                this.data.products.push(newProd);
+                item.productId = newProd.id;
+            }
+        }
         this.save();
         return item;
     }
     deletePurchase(id) {
         const pur = (this.data.purchases || []).find(x => x.id === id);
         if (pur) {
-            this.adjustStock(pur.productId, -pur.qty);
+            if (pur.productId) {
+                this.adjustStock(pur.productId, -pur.qty);
+            }
             this.data.purchases = this.data.purchases.filter(x => x.id !== id);
             this.save();
         }
@@ -899,6 +1003,7 @@ class AquaTrackApp {
         this.selectedStaffMonth = now.toISOString().substring(0, 7); // YYYY-MM
         this.selectedLedgerMonth = this.selectedStaffMonth;
         this.selectedSalesMonth = this.selectedStaffMonth;
+        this.selectedPurchasesMonth = this.selectedStaffMonth;
         this.selectedTruckMonth = this.selectedStaffMonth;
         this.selectedTruckName = 'all';
         this.selectedLedgerStaffId = null;
@@ -1198,8 +1303,8 @@ class AquaTrackApp {
 
         const titles = {
             'dashboard': { title: 'Executive Dashboard', sub: 'Overview of Stock, Come-In, Goes-Out, Sales, 20L Drums & Store Balances' },
-            'products': { title: 'Product & Stock Management', sub: 'Water Bottles (500ml/750ml/1L/2L), Cold Drinks & 20L Drums' },
-            'purchases': { title: 'Factory Purchases (Stock Inflow)', sub: 'Record & Audit factory purchases coming into stock' },
+            'products': { title: 'Product & Stock Management', sub: 'Water Bottles, Drinks, Drums, Filters, Seals, Jars & Company Merchandise' },
+            'purchases': { title: 'Company Purchases & Stock Procurement', sub: 'Audit and record company purchases, raw materials, filters, seals, jars & monthly expenses' },
             'sales': { title: 'Store Sales & Profit Tracker', sub: 'Track product sales to stores with live profit margin' },
             'drums': { title: '20L Water Drum Company Hub', sub: 'Manage 20L drum orders, deliveries & empty returns' },
             'stores': { title: 'Store Accounts & Ledger (Khata)', sub: 'Track retailer billings, payments, and outstanding balance' },
@@ -1279,6 +1384,7 @@ class AquaTrackApp {
     renderAll() {
         this.renderDashboard();
         this.renderProducts();
+        this.renderDistinctSection();
         this.renderPurchases();
         this.renderSales();
         this.renderDrums();
@@ -1293,6 +1399,7 @@ class AquaTrackApp {
     renderCurrentSection() {
         if (this.currentSection === 'dashboard') this.renderDashboard();
         else if (this.currentSection === 'products') this.renderProducts();
+        else if (this.currentSection === 'distinct') this.renderDistinctSection();
         else if (this.currentSection === 'purchases') this.renderPurchases();
         else if (this.currentSection === 'sales') this.renderSales();
         else if (this.currentSection === 'drums') this.renderDrums();
@@ -1394,23 +1501,81 @@ class AquaTrackApp {
     }
 
     // ==========================================
-    // RENDER: PRODUCTS
+    // RENDER: PRODUCTS & STOCK
     // ==========================================
+    renderProductTabs() {
+        const tabGroup = document.getElementById('productTabs');
+        if (!tabGroup) return;
+
+        const categories = this.store.getProductCategories();
+        let html = `<button class="tab-btn ${this.productCategoryFilter === 'all' ? 'active' : ''}" data-cat="all" onclick="app.filterProducts('all')">All Items</button>`;
+
+        categories.forEach(c => {
+            const isActive = this.productCategoryFilter === c.id;
+            html += `<button class="tab-btn ${isActive ? 'active' : ''}" data-cat="${c.id}" onclick="app.filterProducts('${c.id}')">${c.icon} ${c.shortName || c.name}</button>`;
+        });
+
+        tabGroup.innerHTML = html;
+    }
+
+    populateProductCategorySelects() {
+        const select = document.getElementById('productCategory');
+        if (!select) return;
+
+        const categories = this.store.getProductCategories();
+        const curVal = select.value;
+        let html = '';
+
+        categories.forEach(c => {
+            html += `<option value="${c.id}">${c.icon} ${c.name}</option>`;
+        });
+
+        select.innerHTML = html;
+        if (curVal && categories.some(c => c.id === curVal)) {
+            select.value = curVal;
+        }
+    }
+
     filterProducts(cat) {
         this.productCategoryFilter = cat;
-        document.querySelectorAll('#productTabs .tab-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.cat === cat);
-        });
+        this.renderProductTabs();
         this.renderProducts();
     }
 
     renderProducts() {
+        this.renderProductTabs();
+        this.populateProductCategorySelects();
+
         const grid = document.getElementById('productGrid');
         if (!grid) return;
         grid.innerHTML = '';
 
+        const allCats = this.store.getProductCategories();
+        const catMap = {};
+        allCats.forEach(c => { catMap[c.id] = c; });
+
+        // Update Distinct Items Banner Statistics inside Product Inventory
+        const allProductsList = this.store.getProducts();
+        const distinctProds = allProductsList.filter(p => {
+            const cat = catMap[p.category];
+            return p.category === 'distinct' || (cat && cat.isDistinct);
+        });
+        const distCount = distinctProds.length;
+        const distCost = distinctProds.reduce((sum, p) => sum + ((p.totalCost != null && p.totalCost > 0) ? p.totalCost : (p.buyPrice || 0)), 0);
+        const distRev = distinctProds.reduce((sum, p) => sum + (p.sellPrice || 0), 0);
+        const distProfit = distRev - distCost;
+
+        const setSafe = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        };
+        setSafe('prod-distinct-count', distCount + ' Items');
+        setSafe('prod-distinct-cost', '₹' + distCost.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+        setSafe('prod-distinct-rev', '₹' + distRev.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+        setSafe('prod-distinct-profit', '₹' + distProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+
         const search = (document.getElementById('productSearch')?.value || '').toLowerCase();
-        let products = this.store.getProducts();
+        let products = allProductsList;
 
         if (this.productCategoryFilter !== 'all') {
             products = products.filter(p => p.category === this.productCategoryFilter);
@@ -1419,41 +1584,110 @@ class AquaTrackApp {
         if (search) {
             products = products.filter(p => 
                 p.name.toLowerCase().includes(search) || 
-                (p.size && p.size.toLowerCase().includes(search))
+                (p.size && p.size.toLowerCase().includes(search)) ||
+                (p.category && p.category.toLowerCase().includes(search))
             );
         }
 
         if (products.length === 0) {
-            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">No products in this category. Click "+ Add New Product" to create one.</div>';
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">No products found in this category. Click "+ Add New Product" or "✨ + Add Distinct Item" to create one.</div>';
             return;
         }
 
         products.forEach(p => {
-            const profitPerUnit = (p.sellPrice || 0) - (p.buyPrice || 0);
-            const marginPct = p.sellPrice > 0 ? ((profitPerUnit / p.sellPrice) * 100).toFixed(1) : 0;
-            const stockStatus = (p.stock || 0) > 50 
-                ? '<span class="badge badge-success">In Stock (' + p.stock + ')</span>' 
-                : ((p.stock || 0) > 0 ? '<span class="badge badge-warning">Low Stock (' + p.stock + ')</span>' : '<span class="badge badge-secondary">0 Stock</span>');
-
             const card = document.createElement('div');
             card.className = 'product-card';
+
+            const catInfo = catMap[p.category] || { name: p.category || 'Product', icon: '📦', isDistinct: false };
+            const isDistinct = p.category === 'distinct' || !!catInfo.isDistinct;
+
+            if (isDistinct) {
+                const buyPrice = p.buyPrice || 0;
+                const totalCost = (p.totalCost != null) ? p.totalCost : 0;
+                const sellPrice = p.sellPrice || 0;
+                const profitPerUnit = sellPrice - buyPrice;
+                const marginPct = sellPrice > 0 ? ((profitPerUnit / sellPrice) * 100).toFixed(1) : 0;
+
+                card.innerHTML = `
+                <div class="product-header">
+                    <div>
+                        <div class="product-title" style="display: flex; align-items: center; gap: 8px;">
+                            <span>${p.name}</span>
+                        </div>
+                        <div class="product-category" style="margin-top: 3px;">
+                            <span class="badge badge-warning" style="font-size: 0.68rem; padding: 2px 6px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">${catInfo.icon} ${(catInfo.shortName || catInfo.name).toUpperCase()}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge badge-success" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">Distinct Item</span>
+                    </div>
+                </div>
+
+                <div class="product-stats" style="grid-template-columns: repeat(4, 1fr);">
+                    <div class="stat-item">
+                        <span class="stat-label">Per Unit Cost</span>
+                        <span class="stat-val" style="color: #38bdf8;">₹${buyPrice.toFixed(2)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Cost</span>
+                        <span class="stat-val" style="color: #a5b4fc;">₹${totalCost.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Selling Price</span>
+                        <span class="stat-val" style="color: #38bdf8;">₹${sellPrice.toFixed(2)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Profit / Unit</span>
+                        <span class="stat-val stat-profit" style="color: ${profitPerUnit >= 0 ? '#10b981' : '#ef4444'};">₹${profitPerUnit.toFixed(2)} (${marginPct}%)</span>
+                    </div>
+                </div>
+
+                <div class="product-footer-actions">
+                    <div class="product-stock-desc">Cost: <strong>₹${buyPrice.toFixed(2)}</strong> | Selling Price: <strong>₹${sellPrice.toFixed(2)}</strong></div>
+                    <div class="product-btns">
+                        <button class="btn btn-warning btn-sm" onclick="app.editProduct('${p.id}')">✏️ Edit</button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="app.deleteProduct('${p.id}')">🗑️</button>
+                    </div>
+                </div>
+                `;
+                grid.appendChild(card);
+                return;
+            }
+
+            const profitPerUnit = (p.sellPrice || 0) - (p.buyPrice || 0);
+            const marginPct = p.sellPrice > 0 ? ((profitPerUnit / p.sellPrice) * 100).toFixed(1) : 0;
+            const stockVal = p.stock || 0;
+            const stockStatus = stockVal > 50 
+                ? '<span class="badge badge-success">In Stock (' + stockVal + ')</span>' 
+                : (stockVal > 0 ? '<span class="badge badge-warning">Low Stock (' + stockVal + ')</span>' : '<span class="badge badge-danger">0 Stock</span>');
+
+            const catLabel = `${catInfo.icon} ${catInfo.shortName || catInfo.name || (p.category ? p.category.toUpperCase() : 'PRODUCT')}`;
+            const unitLabel = p.unitType || (p.category === 'water' || p.category === 'drinks' ? 'Bottles' : 'Units');
+            const unitsPerBox = p.unitsPerBox || (p.category === 'water' ? 24 : 1);
+            const boxesCalc = unitsPerBox > 1 ? ` (~${(stockVal / unitsPerBox).toFixed(1)} Boxes)` : '';
+
             card.innerHTML = `
                 <div class="product-header">
                     <div>
-                        <div class="product-title">${p.name}</div>
-                        <div class="product-category">${p.size || ''} • ${p.category.toUpperCase()} • (${p.unitsPerBox || 24} Units/Box)</div>
+                        <div class="product-title" style="display: flex; align-items: center; gap: 8px;">
+                            <span>${p.name}</span>
+                        </div>
+                        <div class="product-category" style="margin-top: 3px;">
+                            <span class="badge badge-info" style="font-size: 0.68rem; padding: 2px 6px;">${catLabel}</span>
+                            <span style="color: var(--text-secondary); margin-left: 4px;">${p.size || 'Standard'} • (${unitsPerBox} per Pack/Box)</span>
+                        </div>
                     </div>
                     <div>${stockStatus}</div>
                 </div>
 
                 <div class="product-stats">
                     <div class="stat-item">
-                        <span class="stat-label">Factory Cost</span>
+                        <span class="stat-label">Buy Cost</span>
                         <span class="stat-val">₹${(p.buyPrice || 0).toFixed(2)}</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Selling Rate</span>
-                        <span class="stat-val">₹${(p.sellPrice || 0).toFixed(2)}</span>
+                        <span class="stat-label">Store Sell Rate</span>
+                        <span class="stat-val" style="color: #38bdf8;">₹${(p.sellPrice || 0).toFixed(2)}</span>
                     </div>
                     <div class="stat-item">
                         <span class="stat-label">Profit / Unit</span>
@@ -1466,10 +1700,10 @@ class AquaTrackApp {
                 </div>
 
                 <div class="product-footer-actions">
-                    <div class="product-stock-desc">Stock: <strong>${p.stock || 0} Units</strong> (~${((p.stock || 0)/(p.unitsPerBox || 24)).toFixed(1)} Boxes)</div>
+                    <div class="product-stock-desc">Available Stock: <strong>${stockVal} ${unitLabel}</strong>${boxesCalc}</div>
                     <div class="product-btns">
-                        <button class="btn btn-secondary btn-sm" onclick="app.editProduct('${p.id}')">✏️ Edit</button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="app.deleteProduct('${p.id}')">🗑️ Delete</button>
+                        <button class="btn btn-warning btn-sm" onclick="app.editProduct('${p.id}')">✏️ Edit</button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="app.deleteProduct('${p.id}')">🗑️</button>
                     </div>
                 </div>
             `;
@@ -1478,45 +1712,318 @@ class AquaTrackApp {
     }
 
     // ==========================================
-    // RENDER: PURCHASES (FACTORY INFLOW)
+    // RENDER: DISTINCT ITEMS SECTION
     // ==========================================
+    renderDistinctSection() {
+        const grid = document.getElementById('distinctGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        const allCats = this.store.getProductCategories();
+        const catMap = {};
+        allCats.forEach(c => { catMap[c.id] = c; });
+
+        let products = this.store.getProducts().filter(p => p.category === 'distinct' || (catMap[p.category] && catMap[p.category].isDistinct));
+        const search = (document.getElementById('distinctSearch')?.value || '').toLowerCase();
+
+        if (search) {
+            products = products.filter(p => p.name.toLowerCase().includes(search));
+        }
+
+        const totalCost = products.reduce((sum, p) => sum + ((p.totalCost != null) ? p.totalCost : ((p.buyPrice || 0) * (p.stock || 1))), 0);
+        const totalRevenue = products.reduce((sum, p) => sum + ((p.sellPrice || 0) * (p.stock || 1)), 0);
+        const totalProfit = products.reduce((sum, p) => sum + (((p.sellPrice || 0) - (p.buyPrice || 0)) * (p.stock || 1)), 0);
+
+        const countEl = document.getElementById('distinct-total-count');
+        if (countEl) countEl.textContent = `${products.length} Items`;
+
+        const costEl = document.getElementById('distinct-total-cost');
+        if (costEl) costEl.textContent = `₹${totalCost.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+
+        const revEl = document.getElementById('distinct-total-revenue');
+        if (revEl) revEl.textContent = `₹${totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+
+        const profEl = document.getElementById('distinct-total-profit');
+        if (profEl) profEl.textContent = `₹${totalProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+
+        if (products.length === 0) {
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">No distinct items found. Click "✨ + Add Distinct Item" to create one.</div>';
+            return;
+        }
+
+        products.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+
+            const buyPrice = p.buyPrice || 0;
+            const itemTotalCost = (p.totalCost != null) ? p.totalCost : 0;
+            const sellPrice = p.sellPrice || 0;
+            const profitPerUnit = sellPrice - buyPrice;
+            const marginPct = sellPrice > 0 ? ((profitPerUnit / sellPrice) * 100).toFixed(1) : 0;
+
+            card.innerHTML = `
+                <div class="product-header">
+                    <div>
+                        <div class="product-title" style="display: flex; align-items: center; gap: 8px;">
+                            <span>${p.name}</span>
+                        </div>
+                        <div class="product-category" style="margin-top: 3px;">
+                            <span class="badge badge-warning" style="font-size: 0.68rem; padding: 2px 6px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">✨ DISTINCT ITEM</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge badge-success" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">Distinct Item</span>
+                    </div>
+                </div>
+
+                <div class="product-stats" style="grid-template-columns: repeat(4, 1fr);">
+                    <div class="stat-item">
+                        <span class="stat-label">Per Unit Cost</span>
+                        <span class="stat-val" style="color: #38bdf8;">₹${buyPrice.toFixed(2)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Cost</span>
+                        <span class="stat-val" style="color: #a5b4fc;">₹${itemTotalCost.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Selling Price</span>
+                        <span class="stat-val" style="color: #38bdf8;">₹${sellPrice.toFixed(2)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Profit / Unit</span>
+                        <span class="stat-val stat-profit" style="color: ${profitPerUnit >= 0 ? '#10b981' : '#ef4444'};">₹${profitPerUnit.toFixed(2)} (${marginPct}%)</span>
+                    </div>
+                </div>
+
+                <div class="product-footer-actions">
+                    <div class="product-stock-desc">Unit Cost: <strong>₹${buyPrice.toFixed(2)}</strong> | Selling Price: <strong>₹${sellPrice.toFixed(2)}</strong></div>
+                    <div class="product-btns">
+                        <button class="btn btn-warning btn-sm" onclick="app.editProduct('${p.id}')">✏️ Edit</button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="app.deleteProduct('${p.id}')">🗑️</button>
+                    </div>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    // ==========================================
+    // RENDER: PURCHASES & MONTHLY AUDIT
+    // ==========================================
+    populatePurchasesMonthDropdown() {
+        const select = document.getElementById('purchaseMonthFilter');
+        if (!select) return;
+
+        const currentVal = this.selectedPurchasesMonth;
+        const purchases = this.store.getPurchases();
+        const monthSet = new Set();
+        
+        // Always include current month
+        const now = new Date();
+        const currentMonth = now.toISOString().substring(0, 7);
+        monthSet.add(currentMonth);
+
+        purchases.forEach(p => {
+            if (p.date && p.date.length >= 7) {
+                monthSet.add(p.date.substring(0, 7));
+            }
+        });
+
+        const sortedMonths = Array.from(monthSet).sort().reverse();
+        
+        select.innerHTML = '';
+        
+        // Option 1: All Months
+        const allOpt = document.createElement('option');
+        allOpt.value = 'all';
+        allOpt.textContent = '🌟 All Months / All Time';
+        select.appendChild(allOpt);
+
+        sortedMonths.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m;
+            const [y, mm] = m.split('-');
+            const d = new Date(parseInt(y), parseInt(mm) - 1, 1);
+            const monthName = d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+            opt.textContent = `📅 ${monthName}${m === currentMonth ? ' (Current)' : ''}`;
+            select.appendChild(opt);
+        });
+
+        if (currentVal && (sortedMonths.includes(currentVal) || currentVal === 'all')) {
+            select.value = currentVal;
+        } else {
+            select.value = currentMonth;
+            this.selectedPurchasesMonth = currentMonth;
+        }
+    }
+
+    onPurchaseMonthFilterChange() {
+        const select = document.getElementById('purchaseMonthFilter');
+        if (select) {
+            this.selectedPurchasesMonth = select.value;
+        }
+        this.renderPurchases();
+    }
+
+    resetPurchaseFilters() {
+        const search = document.getElementById('purchaseSearch');
+        if (search) search.value = '';
+        const dateInput = document.getElementById('purchaseDateFilter');
+        if (dateInput) dateInput.value = '';
+        const now = new Date();
+        this.selectedPurchasesMonth = now.toISOString().substring(0, 7);
+        const select = document.getElementById('purchaseMonthFilter');
+        if (select) select.value = this.selectedPurchasesMonth;
+        this.renderPurchases();
+    }
+
     renderPurchases() {
+        this.populatePurchasesMonthDropdown();
+
         const tbody = document.getElementById('purchasesTableBody');
         if (!tbody) return;
         tbody.innerHTML = '';
 
         const search = (document.getElementById('purchaseSearch')?.value || '').toLowerCase();
         const dateFilter = document.getElementById('purchaseDateFilter')?.value;
+        const selectedMonth = this.selectedPurchasesMonth || 'all';
 
         let purchases = this.store.getPurchases();
+
+        // 1. Filter by Month
+        if (selectedMonth && selectedMonth !== 'all') {
+            purchases = purchases.filter(p => p.date && p.date.startsWith(selectedMonth));
+        }
+
+        // 2. Filter by Specific Day
         if (dateFilter) {
             purchases = purchases.filter(p => p.date === dateFilter);
         }
+
+        // 3. Search Filter
         if (search) {
             purchases = purchases.filter(p => 
                 (p.factory && p.factory.toLowerCase().includes(search)) ||
                 (p.productName && p.productName.toLowerCase().includes(search)) ||
+                (p.category && p.category.toLowerCase().includes(search)) ||
                 (p.notes && p.notes.toLowerCase().includes(search))
             );
         }
 
+        // Calculate KPI Metrics for this period
+        const totalItemsBought = purchases.reduce((sum, p) => sum + (parseFloat(p.qty) || 0), 0);
+        const totalExpenditure = purchases.reduce((sum, p) => sum + (parseFloat(p.total) || 0), 0);
+        const distinctProds = new Set(purchases.map(p => (p.productName || '').trim().toLowerCase()).filter(Boolean));
+
+        const setSafe = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        };
+
+        setSafe('purchaseKpiTotalItems', totalItemsBought.toLocaleString('en-IN') + ' Units');
+        setSafe('purchaseKpiTotalCost', '₹' + totalExpenditure.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+        setSafe('purchaseKpiOrderCount', purchases.length + ' Invoices / Orders');
+        setSafe('purchaseKpiUniqueCount', distinctProds.size + ' Distinct Items');
+
+        // Render Monthly Item Breakdown Widget
+        const breakdownContainer = document.getElementById('purchaseMonthlyBreakdownContainer');
+        if (breakdownContainer) {
+            if (purchases.length === 0) {
+                breakdownContainer.innerHTML = '';
+            } else {
+                // Aggregate quantities and total cost per product
+                const itemSummaryMap = {};
+                purchases.forEach(p => {
+                    const key = p.productName || 'General Purchase';
+                    if (!itemSummaryMap[key]) {
+                        itemSummaryMap[key] = {
+                            name: key,
+                            category: p.category || 'other',
+                            unit: p.unit || 'Units',
+                            totalQty: 0,
+                            totalCost: 0,
+                            orderCount: 0
+                        };
+                    }
+                    itemSummaryMap[key].totalQty += (parseFloat(p.qty) || 0);
+                    itemSummaryMap[key].totalCost += (parseFloat(p.total) || 0);
+                    itemSummaryMap[key].orderCount += 1;
+                });
+
+                const sortedItems = Object.values(itemSummaryMap).sort((a, b) => b.totalCost - a.totalCost);
+                const monthDisplayLabel = selectedMonth === 'all' ? 'All Time' : (() => {
+                    const [y, mm] = selectedMonth.split('-');
+                    return new Date(parseInt(y), parseInt(mm) - 1, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+                })();
+
+                breakdownContainer.innerHTML = `
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                            <div style="font-weight: 700; color: #38bdf8; font-size: 0.92rem; display: flex; align-items: center; gap: 6px;">
+                                <span>📊</span> Items & Materials Bought in ${monthDisplayLabel} (${sortedItems.length} Products)
+                            </div>
+                            <span style="font-size: 0.8rem; color: var(--text-secondary);">
+                                Total Spend: <strong style="color: #f87171;">₹${totalExpenditure.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>
+                            </span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px;">
+                            ${sortedItems.map(item => `
+                                <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px 12px;">
+                                    <div style="font-weight: 700; color: #f8fafc; font-size: 0.86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${item.name}">${item.name}</div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 0.8rem;">
+                                        <span class="badge badge-info" style="font-size: 0.72rem; padding: 2px 6px;">${item.totalQty.toLocaleString('en-IN')} ${item.unit}</span>
+                                        <strong style="color: #f87171;">₹${item.totalCost.toFixed(2)}</strong>
+                                    </div>
+                                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">
+                                        ${item.orderCount} ${item.orderCount === 1 ? 'order' : 'orders'} in period
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
         if (purchases.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 24px; color: var(--text-muted);">No factory purchases recorded yet. Click "+ Record Factory Purchase" to add arriving stock.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 28px; color: var(--text-muted);">No purchases recorded for this period. Click "+ Record New Purchase" to log company buys (Water stock, filters, seals, jars, materials, etc.).</td></tr>';
             return;
         }
 
+        const catBadges = {
+            'water': '<span class="badge badge-primary">💧 Water</span>',
+            'drinks': '<span class="badge badge-info">🥤 Drink</span>',
+            'drums': '<span class="badge badge-purple">🛢️ 20L Drum</span>',
+            'filters': '<span class="badge badge-warning">🔬 Filter</span>',
+            'seals': '<span class="badge badge-secondary">🔒 Seal & Cap</span>',
+            'jars': '<span class="badge badge-success">🫙 Jar / Can</span>',
+            'raw': '<span class="badge badge-info">🧱 Raw Mat</span>',
+            'spares': '<span class="badge badge-warning">⚙️ Spares</span>',
+            'other': '<span class="badge badge-purple">📦 Goods</span>'
+        };
+
         purchases.forEach(pur => {
             const row = document.createElement('tr');
+            const catBadge = catBadges[pur.category] || '<span class="badge badge-secondary">Item</span>';
+            const unitStr = pur.unit || 'Units';
+            const boxesStr = pur.boxCount ? ` <span style="font-size: 0.75rem; color: var(--text-muted);">(${pur.boxCount} bxs)</span>` : '';
+
             row.innerHTML = `
                 <td>${pur.date}</td>
-                <td><strong>${pur.factory}</strong></td>
-                <td>${pur.productName}</td>
-                <td><span class="badge badge-info">+${pur.qty} Units</span></td>
+                <td>
+                    <strong style="color: #f8fafc; font-size: 0.9rem;">${pur.productName || 'Item'}</strong>
+                    ${pur.factory ? `<div style="font-size: 0.75rem; color: #38bdf8; margin-top: 1px;">🏢 ${pur.factory}</div>` : ''}
+                </td>
+                <td>${catBadge}</td>
+                <td>
+                    <span class="badge badge-info" style="font-size: 0.8rem; padding: 3px 8px;">+${pur.qty} ${unitStr}</span>
+                    ${boxesStr}
+                </td>
                 <td>₹${(pur.rate || 0).toFixed(2)}</td>
-                <td><strong>₹${(pur.total || 0).toFixed(2)}</strong></td>
+                <td><strong style="color: #f87171; font-size: 0.95rem;">₹${(pur.total || 0).toFixed(2)}</strong></td>
                 <td style="color: var(--text-muted); font-size: 0.8rem;">${pur.notes || '-'}</td>
                 <td>
-                    <button class="btn btn-outline-danger btn-sm" onclick="app.deletePurchase('${pur.id}')">Delete</button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="app.deletePurchase('${pur.id}')" title="Delete Purchase">🗑️</button>
                 </td>
             `;
             tbody.appendChild(row);
@@ -1829,7 +2336,7 @@ class AquaTrackApp {
                     <button class="btn btn-primary btn-sm btn-block-action" onclick="app.openStatement('${s.id}')">📜 Statement / Khata</button>
                     <div class="store-sub-actions">
                         <button class="btn btn-success btn-sm btn-sub-action" onclick="app.openPaymentModal('${s.id}')">+ Payment</button>
-                        <button class="btn btn-secondary btn-sm btn-sub-action" onclick="app.editStore('${s.id}')">✏️ Edit</button>
+                        <button class="btn btn-warning btn-sm btn-sub-action" onclick="app.editStore('${s.id}')">✏️ Edit</button>
                         <button class="btn btn-outline-danger btn-sm del-btn" onclick="app.deleteStore('${s.id}')" title="Delete Store">🗑️</button>
                     </div>
                 </div>
@@ -2120,7 +2627,7 @@ class AquaTrackApp {
                     <td>
                         <div style="display: flex; gap: 6px;">
                             <button class="btn btn-primary btn-sm" onclick="app.openStaffLedger('${s.id}', '${month}')" title="View/Edit full month salary & delivery trips">📜 Ledger & Salary</button>
-                            <button class="btn btn-secondary btn-sm" onclick="app.editStaff('${s.id}')" title="Edit Staff Info">✏️</button>
+                            <button class="btn btn-warning btn-sm" onclick="app.editStaff('${s.id}')" title="Edit Staff Info">✏️</button>
                             <button class="btn btn-outline-danger btn-sm" onclick="app.deleteStaff('${s.id}')" title="Delete Staff">🗑️</button>
                         </div>
                     </td>
@@ -2164,7 +2671,7 @@ class AquaTrackApp {
                     <div class="store-actions-wrapper">
                         <button class="btn btn-primary btn-sm btn-block-action" onclick="app.openStaffLedger('${s.id}', '${month}')">📜 View Ledger & Salary</button>
                         <div class="store-sub-actions">
-                            <button class="btn btn-secondary btn-sm btn-sub-action" onclick="app.editStaff('${s.id}')" title="Edit Staff">✏️ Edit Staff</button>
+                            <button class="btn btn-warning btn-sm btn-sub-action" onclick="app.editStaff('${s.id}')" title="Edit Staff">✏️ Edit Staff</button>
                             <button class="btn btn-outline-danger btn-sm del-btn" onclick="app.deleteStaff('${s.id}')" title="Delete Staff">🗑️</button>
                         </div>
                     </div>
@@ -2691,16 +3198,43 @@ class AquaTrackApp {
         }, 3500);
     }
 
-    populateProductSelect(selectId) {
+    populateProductSelect(selectId, allowCustom = false) {
         const select = document.getElementById(selectId);
         if (!select) return;
-        select.innerHTML = '<option value="">-- Select Product --</option>';
-        this.store.getProducts().forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.id;
-            opt.textContent = `${p.name} (${p.size || ''}) [${p.unitsPerBox || 24} / Box] — Stock: ${p.stock || 0}`;
-            select.appendChild(opt);
+        
+        let html = '';
+        if (allowCustom) {
+            html += '<option value="custom">➕ Enter Custom Item / Material / Spare Part</option>';
+            html += '<option value="" disabled>────────── CATALOG PRODUCTS ──────────</option>';
+        } else {
+            html += '<option value="">-- Select Product --</option>';
+        }
+
+        const prods = this.store.getProducts() || [];
+        const allCats = this.store.getProductCategories();
+        const catMap = {};
+        allCats.forEach(c => {
+            catMap[c.id] = `${c.icon} ${c.shortName || c.name}`;
         });
+
+        const grouped = {};
+        prods.forEach(p => {
+            const cat = p.category || 'other';
+            if (!grouped[cat]) grouped[cat] = [];
+            grouped[cat].push(p);
+        });
+
+        Object.keys(grouped).forEach(cat => {
+            const label = catMap[cat] || (cat ? cat.toUpperCase() : 'OTHER');
+            html += `<optgroup label="${label}">`;
+            grouped[cat].forEach(p => {
+                const uLabel = p.unitsPerBox && p.unitsPerBox > 1 ? `[${p.unitsPerBox}/box]` : `[1 unit]`;
+                html += `<option value="${p.id}" data-units="${p.unitsPerBox || 1}" data-buy="${p.buyPrice || 0}" data-price="${p.sellPrice || 0}" data-category="${p.category || 'other'}" data-size="${p.size || ''}" data-unit="${p.unitType || 'Units'}">${p.name} (${p.size || 'Std'}) ${uLabel} — Stock: ${p.stock || 0}</option>`;
+            });
+            html += `</optgroup>`;
+        });
+
+        select.innerHTML = html;
     }
 
     populateStoreSelect(selectId) {
@@ -2716,32 +3250,197 @@ class AquaTrackApp {
     }
 
     // ==========================================
-    // PRODUCT MODAL
+    // CATEGORY MANAGEMENT MODAL & HANDLERS
+    // ==========================================
+    openCategoryModal() {
+        if (!this.canPerform('canEditProducts', 'Products & Stock', 'Manage Categories')) return;
+        const nameInput = document.getElementById('newCategoryName');
+        if (nameInput) nameInput.value = '';
+        this.renderCategoryTable();
+        this.openModal('categoryModal');
+    }
+
+    renderCategoryTable() {
+        const tbody = document.getElementById('categoryTableBody');
+        if (!tbody) return;
+
+        const categories = this.store.getProductCategories();
+        tbody.innerHTML = '';
+
+        if (categories.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px; color: var(--text-muted);">No categories available. Add one above or click Restore Defaults!</td></tr>';
+            return;
+        }
+
+        categories.forEach(c => {
+            const row = document.createElement('tr');
+            const typeBadge = c.isDistinct 
+                ? '<span class="badge badge-warning" style="font-size: 0.72rem;">✨ Distinct Cost</span>' 
+                : '<span class="badge badge-info" style="font-size: 0.72rem;">📦 Standard Inventory</span>';
+            
+            const badgeLabel = c.isBuiltIn 
+                ? '<span class="badge badge-primary" style="font-size: 0.65rem; margin-left: 5px;">Default</span>'
+                : '<span class="badge badge-success" style="font-size: 0.65rem; margin-left: 5px;">Custom</span>';
+
+            row.innerHTML = `
+                <td style="font-size: 1.1rem; text-align: center;">${c.icon}</td>
+                <td>
+                    <strong>${c.name}</strong>
+                    ${badgeLabel}
+                </td>
+                <td>${typeBadge}</td>
+                <td style="text-align: right;">
+                    <button type="button" class="btn btn-outline-danger btn-sm" style="padding: 4px 10px; font-size: 0.78rem; font-weight: 600;" onclick="app.deleteProductCategory('${c.id}')">🗑️ Delete</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    handleCategorySubmit(e) {
+        e.preventDefault();
+        if (!this.canPerform('canEditProducts', 'Products & Stock', 'Add Category')) return;
+
+        const name = document.getElementById('newCategoryName')?.value.trim();
+        const icon = document.getElementById('newCategoryIcon')?.value || '🏷️';
+        const style = document.getElementById('newCategoryStyle')?.value || 'standard';
+
+        if (!name) {
+            this.showToast('Please enter a valid category name', 'warning');
+            return;
+        }
+
+        const newCat = this.store.addProductCategory({
+            name: name,
+            shortName: name,
+            icon: icon,
+            isDistinct: style === 'distinct'
+        });
+
+        this.showToast(`Category "${newCat.name}" added successfully!`, 'success');
+        const nameInput = document.getElementById('newCategoryName');
+        if (nameInput) nameInput.value = '';
+
+        this.renderCategoryTable();
+        this.renderProductTabs();
+        this.populateProductCategorySelects();
+        this.renderAll();
+    }
+
+    deleteProductCategory(id) {
+        if (!this.canPerform('canEditProducts', 'Products & Stock', 'Delete Category')) return;
+        const all = this.store.getProductCategories();
+        const target = all.find(c => c.id === id);
+        const name = target ? target.name : 'this category';
+
+        if (confirm(`Are you sure you want to delete the product category "${name}"? Existing products in this category will remain.`)) {
+            this.store.deleteProductCategory(id);
+            this.showToast(`Category "${name}" deleted!`, 'info');
+            this.renderCategoryTable();
+            this.renderProductTabs();
+            this.populateProductCategorySelects();
+            this.renderAll();
+        }
+    }
+
+    restoreDefaultCategories() {
+        if (!this.canPerform('canEditProducts', 'Products & Stock', 'Restore Categories')) return;
+        this.store.restoreDefaultCategories();
+        this.showToast('Default product categories restored!', 'success');
+        this.renderCategoryTable();
+        this.renderProductTabs();
+        this.populateProductCategorySelects();
+        this.renderAll();
+    }
+
+    // ==========================================
+    // PRODUCT MODAL (EXPANDED FOR DISTINCT & CATALOG ITEMS)
     // ==========================================
     openProductModal(prod = null) {
         if (!this.canPerform('canEditProducts', 'Products & Stock')) return;
         document.getElementById('productForm')?.reset();
+        this.populateProductCategorySelects();
+        
+        const distinctGroup = document.getElementById('productDistinctFieldsGroup');
+        const standardGroup = document.getElementById('productStandardFieldsGroup');
+        const todayStr = new Date().toISOString().substring(0, 10);
+        const categories = this.store.getProductCategories();
+
         if (prod) {
-            document.getElementById('productModalTitle').textContent = 'Edit Product';
+            document.getElementById('productModalTitle').textContent = 'Edit Product / Item';
             document.getElementById('productId').value = prod.id;
-            document.getElementById('productCategory').value = prod.category;
-            document.getElementById('productName').value = prod.name;
-            document.getElementById('productSize').value = prod.size || '';
-            document.getElementById('productUnitsPerBox').value = prod.unitsPerBox || 24;
-            document.getElementById('productStock').value = prod.stock || 0;
-            document.getElementById('productStockBoxes').value = ((prod.stock || 0) / (prod.unitsPerBox || 24)).toFixed(1);
-            document.getElementById('productBuyPrice').value = prod.buyPrice;
-            document.getElementById('productSellPrice').value = prod.sellPrice;
+            const cat = prod.category || 'water';
+            document.getElementById('productCategory').value = cat;
+            document.getElementById('productName').value = prod.name || '';
+
+            const catObj = categories.find(c => c.id === cat);
+            const isDistinct = cat === 'distinct' || (catObj && catObj.isDistinct);
+
+            if (isDistinct) {
+                if (distinctGroup) distinctGroup.style.display = 'block';
+                if (standardGroup) standardGroup.style.display = 'none';
+
+                const buyPriceInput = document.getElementById('productDistinctBuyPrice');
+                if (buyPriceInput) buyPriceInput.value = prod.buyPrice != null ? prod.buyPrice : '';
+
+                const totalCostInput = document.getElementById('productDistinctTotalCost');
+                if (totalCostInput) totalCostInput.value = prod.totalCost != null ? prod.totalCost : '';
+
+                const sellPriceInput = document.getElementById('productDistinctSellPrice');
+                if (sellPriceInput) sellPriceInput.value = prod.sellPrice != null ? prod.sellPrice : '';
+
+                this.calcDistinctItemProfit();
+            } else {
+                if (distinctGroup) distinctGroup.style.display = 'none';
+                if (standardGroup) standardGroup.style.display = 'block';
+
+                document.getElementById('productSize').value = prod.size || '';
+                if (document.getElementById('productUnitType')) {
+                    document.getElementById('productUnitType').value = prod.unitType || (prod.category === 'water' ? 'Bottle' : (prod.category === 'drums' ? 'Jar' : 'Piece'));
+                }
+                document.getElementById('productUnitsPerBox').value = prod.unitsPerBox || (prod.category === 'water' ? 24 : 1);
+                document.getElementById('productStock').value = prod.stock || 0;
+                document.getElementById('productStockBoxes').value = ((prod.stock || 0) / (prod.unitsPerBox || 1)).toFixed(1);
+                document.getElementById('productBuyPrice').value = prod.buyPrice || 0;
+                document.getElementById('productSellPrice').value = prod.sellPrice || 0;
+                this.calcProductProfit();
+            }
         } else {
-            document.getElementById('productModalTitle').textContent = 'Add New Product';
+            document.getElementById('productModalTitle').textContent = 'Add New Product / Item';
             document.getElementById('productId').value = '';
-            document.getElementById('productUnitsPerBox').value = 24;
-            document.getElementById('productStockBoxes').value = 10;
-            document.getElementById('productStock').value = 240;
-            document.getElementById('productBuyPrice').value = 5.50;
-            document.getElementById('productSellPrice').value = 10.00;
+            
+            const initialCat = (this.productCategoryFilter && this.productCategoryFilter !== 'all') ? this.productCategoryFilter : 'water';
+            document.getElementById('productCategory').value = initialCat;
+
+            const catObj = categories.find(c => c.id === initialCat);
+            const isDistinct = initialCat === 'distinct' || (catObj && catObj.isDistinct);
+
+            if (isDistinct) {
+                if (distinctGroup) distinctGroup.style.display = 'block';
+                if (standardGroup) standardGroup.style.display = 'none';
+
+                const buyPriceInput = document.getElementById('productDistinctBuyPrice');
+                if (buyPriceInput) buyPriceInput.value = '';
+
+                const totalCostInput = document.getElementById('productDistinctTotalCost');
+                if (totalCostInput) totalCostInput.value = '';
+
+                const sellPriceInput = document.getElementById('productDistinctSellPrice');
+                if (sellPriceInput) sellPriceInput.value = '';
+
+                this.calcDistinctItemProfit();
+            } else {
+                if (distinctGroup) distinctGroup.style.display = 'none';
+                if (standardGroup) standardGroup.style.display = 'block';
+
+                document.getElementById('productUnitsPerBox').value = 24;
+                document.getElementById('productStockBoxes').value = 10;
+                document.getElementById('productStock').value = 240;
+                document.getElementById('productBuyPrice').value = 5.50;
+                document.getElementById('productSellPrice').value = 10.00;
+                this.calcProductProfit();
+            }
         }
-        this.calcProductProfit();
         this.openModal('productModal');
     }
 
@@ -2761,13 +3460,87 @@ class AquaTrackApp {
 
     onProductCategoryChange() {
         const cat = document.getElementById('productCategory')?.value;
+        const distinctGroup = document.getElementById('productDistinctFieldsGroup');
+        const standardGroup = document.getElementById('productStandardFieldsGroup');
+        const categories = this.store.getProductCategories();
+        const catObj = categories.find(c => c.id === cat);
+        const isDistinct = cat === 'distinct' || (catObj && catObj.isDistinct);
+
+        if (isDistinct) {
+            if (distinctGroup) distinctGroup.style.display = 'block';
+            if (standardGroup) standardGroup.style.display = 'none';
+
+            this.calcDistinctItemProfit();
+            return;
+        }
+
+        // Standard categories
+        if (distinctGroup) distinctGroup.style.display = 'none';
+        if (standardGroup) standardGroup.style.display = 'block';
+
         const sizeInput = document.getElementById('productSize');
-        if (cat === 'drums' && sizeInput) sizeInput.value = '20L Drum';
+        const unitSelect = document.getElementById('productUnitType');
+        const unitsPerBox = document.getElementById('productUnitsPerBox');
+
+        if (cat === 'drums') {
+            if (sizeInput) sizeInput.value = '20L Drum';
+            if (unitSelect) unitSelect.value = 'Jar';
+            if (unitsPerBox) unitsPerBox.value = 1;
+        } else if (cat === 'filters') {
+            if (sizeInput && !sizeInput.value) sizeInput.value = '20-inch Spun';
+            if (unitSelect) unitSelect.value = 'Piece';
+            if (unitsPerBox) unitsPerBox.value = 1;
+        } else if (cat === 'seals') {
+            if (sizeInput && !sizeInput.value) sizeInput.value = '5000 Pcs Roll';
+            if (unitSelect) unitSelect.value = 'Roll';
+            if (unitsPerBox) unitsPerBox.value = 1;
+        } else if (cat === 'jars') {
+            if (sizeInput && !sizeInput.value) sizeInput.value = '20L Blue Can';
+            if (unitSelect) unitSelect.value = 'Jar';
+            if (unitsPerBox) unitsPerBox.value = 1;
+        } else if (cat === 'water') {
+            if (sizeInput && !sizeInput.value) sizeInput.value = '500ml';
+            if (unitSelect) unitSelect.value = 'Bottle';
+            if (unitsPerBox) unitsPerBox.value = 24;
+        } else if (cat === 'drinks') {
+            if (sizeInput && !sizeInput.value) sizeInput.value = '250ml';
+            if (unitSelect) unitSelect.value = 'Bottle';
+            if (unitsPerBox) unitsPerBox.value = 24;
+        } else {
+            if (sizeInput && !sizeInput.value) sizeInput.value = 'Standard';
+            if (unitSelect && !unitSelect.value) unitSelect.value = 'Piece';
+            if (unitsPerBox && !unitsPerBox.value) unitsPerBox.value = 1;
+        }
+        this.calcProductStockFromBoxes();
+    }
+
+    calcDistinctItemProfit() {
+        const buyPrice = parseFloat(document.getElementById('productDistinctBuyPrice')?.value) || 0;
+        const sellPrice = parseFloat(document.getElementById('productDistinctSellPrice')?.value) || 0;
+        const profit = sellPrice - buyPrice;
+        const marginPct = sellPrice > 0 ? ((profit / sellPrice) * 100).toFixed(1) : '0';
+
+        const preview = document.getElementById('productDistinctProfitPreview');
+        if (preview) {
+            preview.textContent = '₹' + profit.toFixed(2) + (sellPrice > 0 ? ' (' + marginPct + '%)' : '');
+            preview.style.color = profit >= 0 ? '#10b981' : '#ef4444';
+        }
+    }
+
+    onProductUnitTypeChange() {
+        const unit = document.getElementById('productUnitType')?.value;
+        const unitsPerBox = document.getElementById('productUnitsPerBox');
+        if (unit === 'Piece' || unit === 'Jar' || unit === 'Roll' || unit === 'Set') {
+            if (unitsPerBox && unitsPerBox.value == 24) unitsPerBox.value = 1;
+        } else if (unit === 'Bottle' || unit === 'Box') {
+            if (unitsPerBox && unitsPerBox.value == 1) unitsPerBox.value = 24;
+        }
+        this.calcProductStockFromBoxes();
     }
 
     calcProductStockFromBoxes() {
         const boxes = parseFloat(document.getElementById('productStockBoxes')?.value) || 0;
-        const unitsPerBox = parseInt(document.getElementById('productUnitsPerBox')?.value) || 24;
+        const unitsPerBox = parseInt(document.getElementById('productUnitsPerBox')?.value) || 1;
         const total = Math.round(boxes * unitsPerBox);
         const stockEl = document.getElementById('productStock');
         if (stockEl) stockEl.value = total;
@@ -2776,7 +3549,7 @@ class AquaTrackApp {
 
     calcProductStockFromUnits() {
         const units = parseInt(document.getElementById('productStock')?.value) || 0;
-        const unitsPerBox = parseInt(document.getElementById('productUnitsPerBox')?.value) || 24;
+        const unitsPerBox = parseInt(document.getElementById('productUnitsPerBox')?.value) || 1;
         const boxesEl = document.getElementById('productStockBoxes');
         if (boxesEl) boxesEl.value = (units / unitsPerBox).toFixed(1);
         this.calcProductProfit();
@@ -2785,7 +3558,7 @@ class AquaTrackApp {
     calcProductProfit() {
         const buy = parseFloat(document.getElementById('productBuyPrice')?.value) || 0;
         const sell = parseFloat(document.getElementById('productSellPrice')?.value) || 0;
-        const unitsPerBox = parseInt(document.getElementById('productUnitsPerBox')?.value) || 24;
+        const unitsPerBox = parseInt(document.getElementById('productUnitsPerBox')?.value) || 1;
         const diff = sell - buy;
         const boxDiff = diff * unitsPerBox;
 
@@ -2805,47 +3578,125 @@ class AquaTrackApp {
         e.preventDefault();
         if (!this.canPerform('canEditProducts', 'Products & Stock', 'Save Product')) return;
         const id = document.getElementById('productId')?.value;
-        const unitsPerBox = parseInt(document.getElementById('productUnitsPerBox')?.value) || 24;
-        const data = {
-            category: document.getElementById('productCategory')?.value,
-            name: document.getElementById('productName')?.value.trim(),
-            size: document.getElementById('productSize')?.value.trim(),
-            unitsPerBox: unitsPerBox,
-            stock: parseInt(document.getElementById('productStock')?.value) || 0,
-            buyPrice: parseFloat(document.getElementById('productBuyPrice')?.value) || 0,
-            sellPrice: parseFloat(document.getElementById('productSellPrice')?.value) || 0
-        };
+        const cat = document.getElementById('productCategory')?.value || 'water';
+        const categories = this.store.getProductCategories();
+        const catObj = categories.find(c => c.id === cat);
+        const isDistinct = cat === 'distinct' || (catObj && catObj.isDistinct);
+
+        let data = {};
+        if (isDistinct) {
+            const buyPrice = parseFloat(document.getElementById('productDistinctBuyPrice')?.value) || 0;
+            const totalCost = parseFloat(document.getElementById('productDistinctTotalCost')?.value) || 0;
+            const sellPrice = parseFloat(document.getElementById('productDistinctSellPrice')?.value) || 0;
+            const qty = (buyPrice > 0 && totalCost > 0) ? Math.round(totalCost / buyPrice) : 1;
+
+            data = {
+                category: cat,
+                name: document.getElementById('productName')?.value.trim() || 'Distinct Item',
+                buyPrice: buyPrice,
+                totalCost: totalCost,
+                sellPrice: sellPrice,
+                stock: qty,
+                size: 'Distinct Item',
+                unitType: 'Unit',
+                unitsPerBox: 1
+            };
+        } else {
+            const unitsPerBox = parseInt(document.getElementById('productUnitsPerBox')?.value) || 1;
+            data = {
+                category: cat,
+                name: document.getElementById('productName')?.value.trim(),
+                size: document.getElementById('productSize')?.value.trim() || 'Standard',
+                unitType: document.getElementById('productUnitType')?.value || 'Units',
+                unitsPerBox: unitsPerBox,
+                stock: parseInt(document.getElementById('productStock')?.value) || 0,
+                buyPrice: parseFloat(document.getElementById('productBuyPrice')?.value) || 0,
+                sellPrice: parseFloat(document.getElementById('productSellPrice')?.value) || 0
+            };
+        }
 
         if (id) {
             this.store.updateProduct(id, data);
-            this.showToast('Product updated successfully!', 'success');
+            this.showToast(`Product ${data.name} updated successfully!`, 'success');
         } else {
             this.store.addProduct(data);
-            this.showToast('Product added to inventory!', 'success');
+            this.showToast(`New Product ${data.name} added to inventory!`, 'success');
         }
         this.closeModal('productModal');
         this.renderAll();
     }
 
     // ==========================================
-    // PURCHASE MODAL (FACTORY INFLOW)
+    // PURCHASE MODAL (COMPANY PURCHASES & PROCUREMENT)
     // ==========================================
     openPurchaseModal() {
-        if (!this.canPerform('canEditPurchases', 'Factory Purchases')) return;
+        if (!this.canPerform('canEditPurchases', 'Company Purchases')) return;
         document.getElementById('purchaseForm')?.reset();
         document.getElementById('purchaseDate').value = this.getTodayStr();
-        this.populateProductSelect('purchaseProduct');
-        document.getElementById('purchaseTotalPreview').textContent = '₹0.00';
+        
+        // Populate select with custom item option first
+        this.populateProductSelect('purchaseProduct', true);
+        
+        const prods = this.store.getProducts();
+        if (prods && prods.length > 0) {
+            document.getElementById('purchaseProduct').value = prods[0].id;
+        } else {
+            document.getElementById('purchaseProduct').value = 'custom';
+        }
+
+        const syncCb = document.getElementById('purchaseSyncInventory');
+        if (syncCb) syncCb.checked = true;
+
+        this.onPurchaseProductChange();
         this.openModal('purchaseModal');
     }
 
     onPurchaseProductChange() {
-        const pid = document.getElementById('purchaseProduct')?.value;
-        const p = this.store.getProduct(pid);
+        const select = document.getElementById('purchaseProduct');
+        const val = select ? select.value : '';
+        const customGroup = document.getElementById('purchaseCustomGroup');
+        const customInput = document.getElementById('purchaseCustomName');
+        const catSelect = document.getElementById('purchaseCategory');
+        const unitSelect = document.getElementById('purchaseUnit');
+        const rateInput = document.getElementById('purchaseRate');
+        const boxRateInput = document.getElementById('purchaseBoxRate');
+        const qtyInput = document.getElementById('purchaseQty');
+
+        if (val === 'custom' || !val) {
+            if (customGroup) customGroup.style.display = 'block';
+            if (customInput) {
+                customInput.required = true;
+                customInput.focus();
+            }
+            if (rateInput && !rateInput.value) rateInput.value = '';
+            if (boxRateInput && !boxRateInput.value) boxRateInput.value = '';
+            if (qtyInput && !qtyInput.value) qtyInput.value = 100;
+            this.calcPurchaseTotal();
+            return;
+        }
+
+        if (customGroup) customGroup.style.display = 'none';
+        if (customInput) customInput.required = false;
+
+        const p = this.store.getProduct(val);
         if (p) {
-            document.getElementById('purchaseRate').value = p.buyPrice;
-            const unitsPerBox = p.unitsPerBox || 24;
-            document.getElementById('purchaseBoxRate').value = (p.buyPrice * unitsPerBox).toFixed(2);
+            if (catSelect) catSelect.value = p.category || 'other';
+            if (unitSelect) {
+                if (p.category === 'water' || p.category === 'drinks') unitSelect.value = 'Bottles';
+                else if (p.category === 'drums') unitSelect.value = 'Jars';
+                else if (p.category === 'filters') unitSelect.value = 'Pieces';
+                else if (p.category === 'seals') unitSelect.value = 'Rolls';
+                else if (p.category === 'jars') unitSelect.value = 'Jars';
+                else unitSelect.value = 'Pieces';
+            }
+            if (rateInput) rateInput.value = p.buyPrice || 0;
+            const unitsPerBox = p.unitsPerBox || (p.category === 'water' ? 24 : 1);
+            if (boxRateInput) boxRateInput.value = ((p.buyPrice || 0) * unitsPerBox).toFixed(2);
+            if (!qtyInput.value || parseFloat(qtyInput.value) <= 0) {
+                qtyInput.value = unitsPerBox * 10;
+                const boxCount = document.getElementById('purchaseBoxCount');
+                if (boxCount) boxCount.value = 10;
+            }
             this.calcPurchaseTotal();
         }
     }
@@ -2853,26 +3704,28 @@ class AquaTrackApp {
     onPurchaseBoxInput() {
         const boxes = parseFloat(document.getElementById('purchaseBoxCount')?.value) || 0;
         const pid = document.getElementById('purchaseProduct')?.value;
-        const p = this.store.getProduct(pid);
-        const unitsPerBox = p ? (p.unitsPerBox || 24) : 24;
+        const p = pid && pid !== 'custom' ? this.store.getProduct(pid) : null;
+        const unitsPerBox = p ? (p.unitsPerBox || 24) : 1;
         document.getElementById('purchaseQty').value = Math.round(boxes * unitsPerBox);
         this.calcPurchaseTotal();
     }
 
     onPurchaseUnitInput() {
-        const qty = parseInt(document.getElementById('purchaseQty')?.value) || 0;
+        const qty = parseFloat(document.getElementById('purchaseQty')?.value) || 0;
         const pid = document.getElementById('purchaseProduct')?.value;
-        const p = this.store.getProduct(pid);
-        const unitsPerBox = p ? (p.unitsPerBox || 24) : 24;
-        document.getElementById('purchaseBoxCount').value = (qty / unitsPerBox).toFixed(1);
+        const p = pid && pid !== 'custom' ? this.store.getProduct(pid) : null;
+        const unitsPerBox = p ? (p.unitsPerBox || 24) : 1;
+        if (unitsPerBox > 1) {
+            document.getElementById('purchaseBoxCount').value = (qty / unitsPerBox).toFixed(1);
+        }
         this.calcPurchaseTotal();
     }
 
     onPurchaseBoxRateInput() {
         const boxRate = parseFloat(document.getElementById('purchaseBoxRate')?.value) || 0;
         const pid = document.getElementById('purchaseProduct')?.value;
-        const p = this.store.getProduct(pid);
-        const unitsPerBox = p ? (p.unitsPerBox || 24) : 24;
+        const p = pid && pid !== 'custom' ? this.store.getProduct(pid) : null;
+        const unitsPerBox = p ? (p.unitsPerBox || 24) : 1;
         if (unitsPerBox > 0) {
             document.getElementById('purchaseRate').value = (boxRate / unitsPerBox).toFixed(2);
         }
@@ -2889,33 +3742,63 @@ class AquaTrackApp {
 
     handlePurchaseSubmit(e) {
         e.preventDefault();
-        if (!this.canPerform('canEditPurchases', 'Factory Purchases', 'Save Factory Purchase')) return;
+        if (!this.canPerform('canEditPurchases', 'Company Purchases', 'Save Company Purchase')) return;
+        
         const pid = document.getElementById('purchaseProduct')?.value;
-        const p = this.store.getProduct(pid);
-        const qty = parseInt(document.getElementById('purchaseQty')?.value) || 0;
+        const isCustom = pid === 'custom' || !pid;
+        const p = (!isCustom && pid) ? this.store.getProduct(pid) : null;
+
+        const date = document.getElementById('purchaseDate')?.value || this.getTodayStr();
+        const factory = document.getElementById('purchaseFactory')?.value.trim() || '';
+        const customName = document.getElementById('purchaseCustomName')?.value.trim();
+        const category = document.getElementById('purchaseCategory')?.value || (p ? p.category : 'other');
+        const unit = document.getElementById('purchaseUnit')?.value || (p ? p.unitType : 'Units');
+        const qty = parseFloat(document.getElementById('purchaseQty')?.value) || 0;
         const rate = parseFloat(document.getElementById('purchaseRate')?.value) || 0;
+        const boxCount = parseFloat(document.getElementById('purchaseBoxCount')?.value) || 0;
+        const notes = document.getElementById('purchaseNotes')?.value.trim() || '';
+        const syncInventory = !!document.getElementById('purchaseSyncInventory')?.checked;
+
+        let finalProductName = '';
+        if (isCustom) {
+            if (!customName) {
+                alert('Please enter a product or item name.');
+                return;
+            }
+            finalProductName = customName;
+        } else if (p) {
+            finalProductName = p.name + (p.size ? ` (${p.size})` : '');
+        } else {
+            finalProductName = customName || 'Purchased Item';
+        }
+
+        const totalCost = qty * rate;
 
         this.store.addPurchase({
-            date: document.getElementById('purchaseDate')?.value,
-            factory: document.getElementById('purchaseFactory')?.value.trim(),
-            productId: pid,
-            productName: p ? `${p.name} (${p.size || ''})` : 'Custom Product',
+            date: date,
+            factory: factory,
+            productId: isCustom ? null : pid,
+            productName: finalProductName,
+            category: category,
+            unit: unit,
             qty: qty,
+            boxCount: boxCount,
             rate: rate,
-            total: qty * rate,
-            notes: document.getElementById('purchaseNotes')?.value.trim()
+            total: totalCost,
+            notes: notes,
+            syncInventory: syncInventory
         });
 
-        this.showToast('Factory stock recorded and stock updated!', 'success');
+        this.showToast(`✅ Purchase of ${qty} ${unit} for ${finalProductName} recorded!`, 'success');
         this.closeModal('purchaseModal');
         this.renderAll();
     }
 
     deletePurchase(id) {
-        if (!this.canPerform('canEditPurchases', 'Factory Purchases')) return;
-        if (confirm('Delete this purchase? Stock will be reversed.')) {
+        if (!this.canPerform('canEditPurchases', 'Company Purchases')) return;
+        if (confirm('Delete this purchase record? Stock will be reversed if synced.')) {
             this.store.deletePurchase(id);
-            this.showToast('Purchase deleted and stock updated.', 'info');
+            this.showToast('Purchase deleted and inventory reversed.', 'info');
             this.renderAll();
         }
     }
@@ -3033,18 +3916,43 @@ class AquaTrackApp {
         const row = document.createElement('div');
         row.className = 'sale-item-row';
         
-        let productOptions = '<option value="">-- Select Product --</option>';
-        this.store.getProducts().forEach(p => {
-            productOptions += `<option value="${p.id}" data-units="${p.unitsPerBox || 24}" data-price="${p.sellPrice}" data-buy="${p.buyPrice}">${p.name} (${p.size || ''}) [${p.unitsPerBox || 24}/box] (Stock: ${p.stock})</option>`;
+        const categories = this.store.getProductCategories();
+        const products = this.store.getProducts();
+        
+        let productOptions = '<option value="">-- Select Product / Item --</option>';
+        categories.forEach(cat => {
+            const catProds = products.filter(p => p.category === cat.id);
+            if (catProds.length > 0) {
+                productOptions += `<optgroup label="${cat.icon || '🏷️'} ${cat.shortName || cat.name}">`;
+                catProds.forEach(p => {
+                    const unitLabel = (p.unitsPerBox && p.unitsPerBox > 1) ? ` [${p.unitsPerBox}/box]` : '';
+                    const sizeLabel = p.size ? ` (${p.size})` : '';
+                    productOptions += `<option value="${p.id}" data-units="${p.unitsPerBox || 1}" data-price="${p.sellPrice || 0}" data-buy="${p.buyPrice || 0}">${p.name}${sizeLabel}${unitLabel} (Stock: ${p.stock || 0})</option>`;
+                });
+                productOptions += `</optgroup>`;
+            }
         });
+
+        // Any uncategorized items
+        const catIds = new Set(categories.map(c => c.id));
+        const otherProds = products.filter(p => !catIds.has(p.category));
+        if (otherProds.length > 0) {
+            productOptions += `<optgroup label="📦 Other Products">`;
+            otherProds.forEach(p => {
+                const unitLabel = (p.unitsPerBox && p.unitsPerBox > 1) ? ` [${p.unitsPerBox}/box]` : '';
+                const sizeLabel = p.size ? ` (${p.size})` : '';
+                productOptions += `<option value="${p.id}" data-units="${p.unitsPerBox || 1}" data-price="${p.sellPrice || 0}" data-buy="${p.buyPrice || 0}">${p.name}${sizeLabel}${unitLabel} (Stock: ${p.stock || 0})</option>`;
+            });
+            productOptions += `</optgroup>`;
+        }
 
         row.innerHTML = `
             <div class="sale-row-col prod-col">
-                <label style="font-size:0.75rem;">Product</label>
+                <label style="font-size:0.75rem;">Product / Item</label>
                 <select class="itemProductSelect" onchange="app.onSaleRowProductChange(this)">${productOptions}</select>
             </div>
             <div class="sale-row-col">
-                <label style="font-size:0.75rem;">Boxes</label>
+                <label style="font-size:0.75rem;">Boxes / Pkts</label>
                 <input type="number" min="0" step="any" class="itemBoxInput" placeholder="0" oninput="app.onSaleRowBoxInput(this)">
             </div>
             <div class="sale-row-col">
@@ -3060,10 +3968,11 @@ class AquaTrackApp {
                 <div class="itemLineTotal" style="font-weight:700; color:#38bdf8; font-size:0.9rem; margin-top:6px;">₹0.00</div>
             </div>
             <div class="sale-row-col del-col" style="padding-top: 14px;">
-                <button type="button" class="btn btn-outline-danger btn-sm" onclick="this.parentElement.parentElement.remove(); app.calcSaleCalculations();">×</button>
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="this.parentElement.parentElement.remove(); app.calcSaleCalculations();" title="Remove Item">×</button>
             </div>
         `;
         list.appendChild(row);
+        list.scrollTop = list.scrollHeight;
     }
 
     onSaleRowProductChange(selectEl) {
@@ -5609,7 +6518,7 @@ class AquaTrackApp {
                     </td>
                     <td>
                         <div style="display: flex; gap: 6px; align-items: center;">
-                            <button class="btn btn-secondary btn-sm" onclick="app.editTruckLog('${log.id}')" title="Edit trip entry" style="padding: 4px 8px; font-size: 0.78rem;">✏️ Edit</button>
+                            <button class="btn btn-warning btn-sm" onclick="app.editTruckLog('${log.id}')" title="Edit trip entry" style="padding: 4px 8px; font-size: 0.78rem;">✏️ Edit</button>
                             <button class="btn btn-outline-danger btn-sm" onclick="app.deleteTruckLog('${log.id}')" title="Delete trip entry" style="padding: 4px 8px; font-size: 0.78rem;">🗑️</button>
                         </div>
                     </td>
@@ -5660,4 +6569,15 @@ if (typeof window !== 'undefined') {
             if (!window.app) window.app = new AquaTrackApp();
         });
     }
+
+    // Enable mouse wheel horizontal scrolling on tab groups
+    document.addEventListener('wheel', function(e) {
+        const tabGroup = e.target.closest('.tab-group');
+        if (tabGroup) {
+            if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                tabGroup.scrollLeft += e.deltaY;
+                e.preventDefault();
+            }
+        }
+    }, { passive: false });
 }

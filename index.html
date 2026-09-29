@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260927_18">
+    <link rel="stylesheet" href="styles.css?v=20260929_22">
 </head>
 <body>
     <!-- Sidebar Backdrop for Mobile -->
@@ -38,7 +38,7 @@
             </a>
             <a href="#" class="nav-item" data-section="purchases" id="nav-purchases">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.707 15.293C4.077 15.923 4.523 17 5.414 17H17"/></svg>
-                <span>Factory Purchases</span>
+                <span>Purchases</span>
             </a>
             <a href="#" class="nav-item" data-section="sales" id="nav-sales">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7C5.895 5 5 5.895 5 7V19C5 20.105 5.895 21 7 21H17C18.105 21 19 20.105 19 19V7C19 5.895 18.105 5 17 5H15M9 5C9 6.105 9.895 7 11 7H13C14.105 7 15 6.105 15 5M12 12H15M12 16H15M9 12H9.01M9 16H9.01"/></svg>
@@ -279,21 +279,21 @@
                             <span>📦</span>
                             <span>Product Inventory & Stock Management</span>
                         </div>
-                        <div style="display: flex; gap: 10px;">
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn btn-primary" onclick="app.openCategoryModal()">🏷️ + Add / Delete Product Category</button>
+                            <button class="btn btn-primary" onclick="app.openProductModal(null, 'distinct')">✨ + Add Distinct Item</button>
                             <button class="btn btn-primary" onclick="app.openProductModal()">+ Add New Product</button>
                         </div>
                     </div>
 
+
                     <div class="filter-bar">
                         <div class="tab-group" id="productTabs">
-                            <button class="tab-btn active" data-cat="all" onclick="app.filterProducts('all')">All Items</button>
-                            <button class="tab-btn" data-cat="water" onclick="app.filterProducts('water')">Water Bottles (500ml/750ml/1L/2L)</button>
-                            <button class="tab-btn" data-cat="drinks" onclick="app.filterProducts('drinks')">Cold Drinks</button>
-                            <button class="tab-btn" data-cat="drums" onclick="app.filterProducts('drums')">20L Drums</button>
+                            <!-- Populated dynamically by app.renderProductTabs() -->
                         </div>
                         <div class="search-input-wrap">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21L16.65 16.65"/></svg>
-                            <input type="text" id="productSearch" placeholder="Search products..." oninput="app.renderProducts()">
+                            <input type="text" id="productSearch" placeholder="Search products, distinct items, filters..." oninput="app.renderProducts()">
                         </div>
                     </div>
 
@@ -301,40 +301,122 @@
                 </div>
             </section>
 
-            <!-- SECTION 3: PURCHASES (FACTORY INFLOW) -->
+            <!-- SECTION: DISTINCT ITEMS -->
+            <section class="app-section" id="section-distinct">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span>✨</span>
+                            <div>
+                                <span style="font-weight: 800; font-size: 1.15rem; color: #f8fafc;">Distinct Items Management</span>
+                                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">Track direct unit costs, total purchase investment, and store selling rates</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="app.openProductModal(null, 'distinct')">✨ + Add Distinct Item</button>
+                    </div>
+
+                    <!-- Summary KPI Cards -->
+                    <div class="drum-summary-cards" style="margin-bottom: 20px;">
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Total Distinct Products</div>
+                            <div class="flow-stat-val" id="distinct-total-count" style="color: #38bdf8; font-size: 1.3rem; font-weight: 800; margin-top: 4px;">0 Items</div>
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Total Purchase Cost</div>
+                            <div class="flow-stat-val" id="distinct-total-cost" style="color: #f59e0b; font-size: 1.3rem; font-weight: 800; margin-top: 4px;">₹0.00</div>
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Total Potential Revenue</div>
+                            <div class="flow-stat-val" id="distinct-total-revenue" style="color: #38bdf8; font-size: 1.3rem; font-weight: 800; margin-top: 4px;">₹0.00</div>
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Total Potential Profit</div>
+                            <div class="flow-stat-val" id="distinct-total-profit" style="color: #10b981; font-size: 1.3rem; font-weight: 800; margin-top: 4px;">₹0.00</div>
+                        </div>
+                    </div>
+
+                    <div class="filter-bar">
+                        <div class="search-input-wrap" style="max-width: 400px; width: 100%;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21L16.65 16.65"/></svg>
+                            <input type="text" id="distinctSearch" placeholder="Search distinct items by name..." oninput="app.renderDistinctSection()">
+                        </div>
+                    </div>
+
+                    <div class="product-grid" id="distinctGrid"></div>
+                </div>
+            </section>
+
+            <!-- SECTION 3: PURCHASES (COMPANY INFLOW & EXPENSES) -->
             <section class="app-section" id="section-purchases">
                 <div class="card">
                     <div class="card-header">
                         <div class="card-title">
-                            <span>🏭</span>
-                            <span>Factory Purchases (Stock Inflow)</span>
+                            <span>🛒</span>
+                            <div>
+                                <span style="font-weight: 800; font-size: 1.15rem; color: #f8fafc;">Company Purchases & Stock Procurement</span>
+                                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">Track everything bought for your company: Water Stock, Drinks, Filters, Seals, Jars, Raw Materials & Spares</div>
+                            </div>
                         </div>
-                        <button class="btn btn-success" onclick="app.openPurchaseModal()">+ Record Factory Purchase</button>
+                        <button class="btn btn-success" onclick="app.openPurchaseModal()">+ Record New Purchase</button>
                     </div>
 
-                    <div class="filter-bar">
-                        <div class="search-input-wrap">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21L16.65 16.65"/></svg>
-                            <input type="text" id="purchaseSearch" placeholder="Search by factory or product..." oninput="app.renderPurchases()">
+                    <!-- Monthly KPI Summary Cards -->
+                    <div class="drum-summary-cards" style="margin-bottom: 20px;">
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Total Items Bought (Period)</div>
+                            <div class="flow-stat-value" id="purchaseKpiTotalItems" style="color: #38bdf8;">0 Units</div>
                         </div>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <label style="margin: 0;">Date Filter:</label>
-                            <input type="date" id="purchaseDateFilter" style="width: auto;" onchange="app.renderPurchases()">
-                            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('purchaseDateFilter').value=''; app.renderPurchases();">Clear</button>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Total Purchase Expenditure</div>
+                            <div class="flow-stat-value" id="purchaseKpiTotalCost" style="color: #f87171;">₹0.00</div>
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Purchase Invoices / Orders</div>
+                            <div class="flow-stat-value" id="purchaseKpiOrderCount" style="color: #fbbf24;">0 Orders</div>
+                        </div>
+                        <div class="flow-stat-box">
+                            <div class="flow-stat-label">Distinct Products Purchased</div>
+                            <div class="flow-stat-value" id="purchaseKpiUniqueCount" style="color: #c084fc;">0 Products</div>
                         </div>
                     </div>
+
+                    <!-- Filter Bar with Monthly Dropdown -->
+                    <div class="filter-bar" style="flex-wrap: wrap; gap: 12px; justify-content: space-between;">
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1;">
+                            <div class="search-input-wrap" style="min-width: 260px; flex: 1;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21L16.65 16.65"/></svg>
+                                <input type="text" id="purchaseSearch" placeholder="Search by product, category, vendor, notes..." oninput="app.renderPurchases()">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.25); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                                <label style="margin: 0; font-size: 0.8rem; color: #38bdf8; font-weight: 700; white-space: nowrap;">📅 Month:</label>
+                                <select id="purchaseMonthFilter" style="width: auto; padding: 4px 8px; font-size: 0.84rem; font-weight: 600; border-radius: 6px;" onchange="app.onPurchaseMonthFilterChange()">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            <div style="display: flex; gap: 6px; align-items: center;">
+                                <label style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Day:</label>
+                                <input type="date" id="purchaseDateFilter" style="width: auto; padding: 4px 8px; font-size: 0.82rem;" onchange="app.renderPurchases()">
+                                <button class="btn btn-secondary btn-sm" onclick="app.resetPurchaseFilters()">Reset</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Monthly Item Breakdown Summary Widget -->
+                    <div id="purchaseMonthlyBreakdownContainer" style="margin-bottom: 18px;"></div>
 
                     <div class="table-responsive">
                         <table>
                             <thead>
                                 <tr>
                                     <th>Date</th>
-                                    <th>Factory / Supplier</th>
-                                    <th>Product Purchased</th>
-                                    <th>Boxes & Units per Box</th>
-                                    <th>Buy Rate</th>
+                                    <th>Product / Item Name</th>
+                                    <th>Category</th>
+                                    <th>Order Quantity</th>
+                                    <th>Unit Rate</th>
                                     <th>Total Cost</th>
-                                    <th>Batch / Notes</th>
+                                    <th>Supplier / Notes</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -1157,85 +1239,207 @@
         </main>
     </div>
 
+    <!-- MODAL: ADD & MANAGE PRODUCT CATEGORIES -->
+    <div class="modal-overlay" id="categoryModal">
+        <div class="modal-box" style="max-width: 580px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="categoryModalTitle">🏷️ Add & Delete Product Categories</h3>
+                <button class="close-btn" onclick="app.closeModal('categoryModal')">&times;</button>
+            </div>
+            <form id="categoryForm" onsubmit="app.handleCategorySubmit(event)">
+                <div class="modal-body">
+                    <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+                        <h4 style="margin: 0 0 10px 0; color: #38bdf8; font-size: 0.92rem; display: flex; align-items: center; gap: 6px;">
+                            <span>✨</span> Add New Category
+                        </h4>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2;">
+                                <label>Category Name *</label>
+                                <input type="text" id="newCategoryName" placeholder="e.g. Juice Bottles, Chemical Additives, Spares" required>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label>Icon / Emoji</label>
+                                <select id="newCategoryIcon">
+                                    <option value="🏷️">🏷️ Tag / General</option>
+                                    <option value="💧">💧 Water / Liquid</option>
+                                    <option value="🥤">🥤 Drink / Beverage</option>
+                                    <option value="🛢️">🛢️ Drum / Barrel</option>
+                                    <option value="🔬">🔬 Filter / Membrane</option>
+                                    <option value="🔒">🔒 Seal / Cap</option>
+                                    <option value="🫙">🫙 Jar / Container</option>
+                                    <option value="🧪">🧪 Chemical / Lab</option>
+                                    <option value="⚙️">⚙️ Spare / Machinery</option>
+                                    <option value="📦">📦 Box / Package</option>
+                                    <option value="🧴">🧴 Bottle / Dispenser</option>
+                                    <option value="✨">✨ Distinct / Special</option>
+                                    <option value="🛒">🛒 Grocery / Retail</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Tracking Style / Type</label>
+                            <select id="newCategoryStyle">
+                                <option value="standard">📦 Standard Inventory (Packaging, Boxes, Buy & Store Sell Rate)</option>
+                                <option value="distinct">✨ Distinct Item (Direct Cost, Buy Date, Per Unit & Total Cost)</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 6px;">+ Add Product Category</button>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h4 style="margin: 0; font-size: 0.88rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">All Product Categories</h4>
+                            <button type="button" class="btn btn-outline btn-sm" style="font-size: 0.74rem; padding: 2px 8px; border-color: rgba(255,255,255,0.2);" onclick="app.restoreDefaultCategories()">↺ Restore Defaults</button>
+                        </div>
+                        <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
+                            <table class="data-table" style="font-size: 0.85rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;">Icon</th>
+                                        <th>Category Name</th>
+                                        <th>Type</th>
+                                        <th style="text-align: right;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="categoryTableBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('categoryModal')">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- MODAL 1: ADD / EDIT PRODUCT -->
     <div class="modal-overlay" id="productModal">
         <div class="modal-box">
             <div class="modal-header">
-                <h3 class="modal-title" id="productModalTitle">Add New Product</h3>
+                <h3 class="modal-title" id="productModalTitle">Add New Product / Item</h3>
                 <button class="close-btn" onclick="app.closeModal('productModal')">&times;</button>
             </div>
             <form id="productForm">
                 <input type="hidden" id="productId">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label>Category *</label>
+                        <label>Product Category *</label>
                         <select id="productCategory" required onchange="app.onProductCategoryChange()">
-                            <option value="water">Packaged Drinking Water Bottle</option>
-                            <option value="drinks">Cold Drink / Beverage</option>
-                            <option value="drums">20L Drum Water</option>
+                            <option value="water">💧 Packaged Drinking Water Bottle</option>
+                            <option value="drinks">🥤 Cold Drink / Beverage</option>
+                            <option value="drums">🛢️ 20L Drum Water</option>
+                            <option value="distinct">✨ Distinct Item</option>
                         </select>
                     </div>
+
                     <div class="form-group">
-                        <label>Product Name * (e.g., Bisleri, Aquafina, Thums Up, Sprite)</label>
-                        <input type="text" id="productName" placeholder="e.g. PureAqua Water" required>
+                        <label>Product / Item Name *</label>
+                        <input type="text" id="productName" placeholder="e.g. RO Filter Membrane / 20L Jar / Cap Seal" required>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Size / Variant *</label>
-                            <input type="text" id="productSize" placeholder="e.g. 500ml, 750ml, 1L, 2L, 20L" required>
+
+                    <!-- DISTINCT ITEM SIMPLE FIELDS (Name, Per Unit Cost, Total Cost, Selling Price) -->
+                    <div id="productDistinctFieldsGroup" style="display: none; background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; padding: 14px; margin-bottom: 12px;">
+                        <div style="font-weight: 700; color: #38bdf8; font-size: 0.86rem; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                            <span>✨</span> Distinct Item Details
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Per Unit Cost (₹) *</label>
+                                <input type="number" step="0.01" id="productDistinctBuyPrice" placeholder="e.g. 50.00" oninput="app.calcDistinctItemProfit()">
+                            </div>
+                            <div class="form-group">
+                                <label>Total Cost (₹) *</label>
+                                <input type="number" step="0.01" id="productDistinctTotalCost" placeholder="e.g. 500.00" oninput="app.calcDistinctItemProfit()">
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label>Pack Size (Units per Box / Bottles per Box) *</label>
-                            <input type="number" id="productUnitsPerBox" min="1" value="24" placeholder="e.g. 24" required oninput="app.calcProductStockFromBoxes()">
+                            <label>Selling Price (₹) *</label>
+                            <input type="number" step="0.01" id="productDistinctSellPrice" placeholder="e.g. 80.00" oninput="app.calcDistinctItemProfit()">
                         </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Initial Stock in Boxes</label>
-                            <input type="number" id="productStockBoxes" min="0" value="10" placeholder="e.g. 10" oninput="app.calcProductStockFromBoxes()">
-                        </div>
-                        <div class="form-group">
-                            <label>Total Initial Stock (Units per Box/Bottles) *</label>
-                            <input type="number" id="productStock" min="0" value="240" required oninput="app.calcProductStockFromUnits()">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Factory Buy Cost (₹ / Unit) *</label>
-                            <input type="number" step="0.01" id="productBuyPrice" placeholder="5.50" required oninput="app.calcProductProfit()">
-                        </div>
-                        <div class="form-group">
-                            <label>Store Selling Rate (₹ / Unit) *</label>
-                            <input type="number" step="0.01" id="productSellPrice" placeholder="10.00" required oninput="app.calcProductProfit()">
+                        <div class="calc-preview-card" style="margin-top: 6px; display: flex; justify-content: space-between; align-items: center; background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.3);">
+                            <span class="label" style="color: #10b981; font-weight: 600;">Profit Per Unit:</span>
+                            <span class="val" id="productDistinctProfitPreview" style="color: #10b981; font-size: 1.15rem; font-weight: 700;">₹0.00</span>
                         </div>
                     </div>
-                    <div class="calc-preview-card" style="display: flex; flex-direction: column; gap: 4px; align-items: stretch;">
-                        <div style="display: flex; justify-content: space-between;">
-                            <span class="label">Profit Per Unit (Bottle):</span>
-                            <span class="val" id="productProfitPreview" style="font-size: 1.1rem;">₹4.50</span>
+
+                    <!-- STANDARD INVENTORY FIELDS (For standard catalog items) -->
+                    <div id="productStandardFieldsGroup">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Size / Variant / Specs *</label>
+                                <input type="text" id="productSize" placeholder="e.g. 500ml, 1L, 20L, 20-inch, 5000pcs roll">
+                            </div>
+                            <div class="form-group">
+                                <label>Unit / Packaging Type</label>
+                                <select id="productUnitType" onchange="app.onProductUnitTypeChange()">
+                                    <option value="Bottle">Bottle (Water/Drink)</option>
+                                    <option value="Piece">Piece / Unit (Filter, Jar, Dispenser)</option>
+                                    <option value="Box">Box / Crate</option>
+                                    <option value="Packet">Packet / Bag</option>
+                                    <option value="Roll">Roll (Seals, Labels)</option>
+                                    <option value="Jar">Jar / 20L Can</option>
+                                    <option value="Set">Set / Kit</option>
+                                    <option value="Kg">Kg</option>
+                                    <option value="Litre">Litre</option>
+                                </select>
+                            </div>
                         </div>
-                        <div style="display: flex; justify-content: space-between; border-top: 1px dashed rgba(56, 189, 248, 0.3); padding-top: 4px;">
-                            <span class="label" style="color: #a5b4fc;">📦 Profit Per Box (<span id="productUnitsPerBoxLabel">24</span> Units per Box):</span>
-                            <span class="val" id="productBoxProfitPreview" style="font-size: 1.1rem; color: #a5b4fc;">₹108.00</span>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Units per Box / Pack Size *</label>
+                                <input type="number" id="productUnitsPerBox" min="1" value="24" placeholder="e.g. 24 (or 1 for single piece)" oninput="app.calcProductStockFromBoxes()">
+                            </div>
+                            <div class="form-group">
+                                <label>Initial Stock (Boxes / Packs)</label>
+                                <input type="number" id="productStockBoxes" min="0" value="10" placeholder="e.g. 10" oninput="app.calcProductStockFromBoxes()">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Total Initial Stock in Single Units *</label>
+                            <input type="number" id="productStock" min="0" value="240" oninput="app.calcProductStockFromUnits()">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Buy Cost (₹ / Unit) *</label>
+                                <input type="number" step="0.01" id="productBuyPrice" placeholder="5.50" oninput="app.calcProductProfit()">
+                            </div>
+                            <div class="form-group">
+                                <label>Store Selling Rate (₹ / Unit) *</label>
+                                <input type="number" step="0.01" id="productSellPrice" placeholder="10.00" oninput="app.calcProductProfit()">
+                            </div>
+                        </div>
+                        <div class="calc-preview-card" style="display: flex; flex-direction: column; gap: 4px; align-items: stretch;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span class="label">Profit Per Single Unit:</span>
+                                <span class="val" id="productProfitPreview" style="font-size: 1.1rem;">₹4.50</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; border-top: 1px dashed rgba(56, 189, 248, 0.3); padding-top: 4px;">
+                                <span class="label" style="color: #a5b4fc;">📦 Profit Per Box/Pack (<span id="productUnitsPerBoxLabel">24</span> Units):</span>
+                                <span class="val" id="productBoxProfitPreview" style="font-size: 1.1rem; color: #a5b4fc;">₹108.00</span>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="app.closeModal('productModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Product</button>
+                    <button type="submit" class="btn btn-primary">Save Product to Inventory</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- MODAL 2: FACTORY PURCHASE (INFLOW) -->
+    <!-- MODAL 2: COMPANY PURCHASE & INFLOW -->
     <div class="modal-overlay" id="purchaseModal">
-        <div class="modal-box">
+        <div class="modal-box" style="max-width: 640px;">
             <div class="modal-header">
-                <h3 class="modal-title">Record Factory Purchase (Stock Inflow)</h3>
+                <h3 class="modal-title" id="purchaseModalTitle">Record Company Purchase / Stock Inflow</h3>
                 <button class="close-btn" onclick="app.closeModal('purchaseModal')">&times;</button>
             </div>
             <form id="purchaseForm">
+                <input type="hidden" id="purchaseId">
                 <div class="modal-body">
                     <div class="form-row">
                         <div class="form-group">
@@ -1243,46 +1447,96 @@
                             <input type="date" id="purchaseDate" required>
                         </div>
                         <div class="form-group">
-                            <label>Factory / Supplier Name *</label>
-                            <input type="text" id="purchaseFactory" placeholder="e.g. National Bottling Plant" required>
+                            <label>Supplier / Vendor / Factory Name</label>
+                            <input type="text" id="purchaseFactory" placeholder="e.g. National Bottling / Aquafresh Filter Co. / Sharma Packaging">
                         </div>
                     </div>
+
+                    <!-- Product Selection vs Custom Item -->
                     <div class="form-group">
-                        <label>Select Product *</label>
-                        <select id="purchaseProduct" required onchange="app.onPurchaseProductChange()"></select>
+                        <label>Item Selection *</label>
+                        <select id="purchaseProduct" onchange="app.onPurchaseProductChange()">
+                            <!-- Dynamic options populated with existing catalog + custom option -->
+                        </select>
                     </div>
+
+                    <div class="form-group" id="purchaseCustomGroup" style="display: none;">
+                        <label>Custom Product / Item Name * (e.g., RO 20" Spun Filter, Seal Heat Shrink, Jar 20L Blue)</label>
+                        <input type="text" id="purchaseCustomName" placeholder="Enter custom item name">
+                    </div>
+
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Boxes Purchased</label>
+                            <label>Item Category *</label>
+                            <select id="purchaseCategory">
+                                <option value="water">💧 Packaged Water Bottles</option>
+                                <option value="drinks">🥤 Cold Drinks & Beverages</option>
+                                <option value="drums">🛢️ 20L Water Drums</option>
+                                <option value="filters">🔬 Filters & Cartridges</option>
+                                <option value="seals">🔒 Seals, Caps & Packaging</option>
+                                <option value="jars">🫙 Jars, Cans & Dispensers</option>
+                                <option value="raw">🧱 Raw Materials & Chemicals</option>
+                                <option value="spares">⚙️ Machinery & Spare Parts</option>
+                                <option value="other">📦 Other Company Goods / Expense</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Unit Measurement</label>
+                            <select id="purchaseUnit">
+                                <option value="Pieces">Pieces / Units</option>
+                                <option value="Boxes">Boxes / Crates</option>
+                                <option value="Packets">Packets / Bags</option>
+                                <option value="Rolls">Rolls</option>
+                                <option value="Jars">Jars / Cans</option>
+                                <option value="Bottles">Bottles</option>
+                                <option value="Kg">Kg</option>
+                                <option value="Litres">Litres</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Boxes / Packs (Optional)</label>
                             <input type="number" min="0" step="any" id="purchaseBoxCount" placeholder="e.g. 20" oninput="app.onPurchaseBoxInput()">
                         </div>
                         <div class="form-group">
-                            <label>Total Units per Box Purchased *</label>
-                            <input type="number" min="1" id="purchaseQty" placeholder="e.g. 480" required oninput="app.onPurchaseUnitInput()">
+                            <label>Total Order Quantity *</label>
+                            <input type="number" min="0.01" step="any" id="purchaseQty" placeholder="e.g. 500" required oninput="app.onPurchaseUnitInput()">
                         </div>
                     </div>
+
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Unit Buy Cost (₹ / Unit) *</label>
-                            <input type="number" step="0.01" id="purchaseRate" required oninput="app.calcPurchaseTotal()">
+                            <label>Cost Rate (₹ / Unit) *</label>
+                            <input type="number" step="0.01" id="purchaseRate" placeholder="e.g. 15.00" required oninput="app.calcPurchaseTotal()">
                         </div>
                         <div class="form-group">
-                            <label>Rate Per Box (₹ / Box)</label>
+                            <label>Rate Per Box / Pack (₹)</label>
                             <input type="number" step="0.01" id="purchaseBoxRate" placeholder="Auto" oninput="app.onPurchaseBoxRateInput()">
                         </div>
                     </div>
+
                     <div class="form-group">
-                        <label>Notes / Batch # / Delivery Driver Info</label>
-                        <input type="text" id="purchaseNotes" placeholder="e.g. Batch #409, Truck Delivery Driver: Ramesh">
+                        <label>Notes / Batch # / Invoice Reference</label>
+                        <input type="text" id="purchaseNotes" placeholder="e.g. Inv #892, Truck Delivery, Driver: Ramesh">
                     </div>
+
+                    <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px; margin-top: 6px;">
+                        <input type="checkbox" id="purchaseSyncInventory" checked style="width: 18px; height: 18px; cursor: pointer;">
+                        <label for="purchaseSyncInventory" style="cursor: pointer; margin: 0; font-size: 0.88rem; color: #38bdf8; font-weight: 600;">
+                            ⚡ Sync with Products & Stock inventory (Auto-increases available stock)
+                        </label>
+                    </div>
+
                     <div class="calc-preview-card">
-                        <div class="label">Total Factory Payment</div>
-                        <div class="val" id="purchaseTotalPreview">₹0.00</div>
+                        <div class="label">Total Purchase Cost / Bill Amount</div>
+                        <div class="val" id="purchaseTotalPreview" style="color: #10b981;">₹0.00</div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="app.closeModal('purchaseModal')">Cancel</button>
-                    <button type="submit" class="btn btn-success">Record Inflow & Add Stock</button>
+                    <button type="submit" class="btn btn-success">Save Purchase ✓</button>
                 </div>
             </form>
         </div>
@@ -1662,7 +1916,7 @@
             <div class="modal-footer" style="justify-content: space-between; flex-wrap: wrap; gap: 8px;">
                 <div style="display: flex; gap: 8px;">
                     <button class="btn btn-purple btn-sm" onclick="app.openSaleFromStatement()">🛒 + New Order / Sell Products</button>
-                    <button class="btn btn-primary btn-sm" id="statementPayBtn" onclick="app.openPaymentFromStatement()">+ Record Payment</button>
+                    <button class="btn btn-success btn-sm" id="statementPayBtn" onclick="app.openPaymentFromStatement()">+ Record Payment</button>
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨️ Print Statement</button>
@@ -2601,7 +2855,7 @@
     <!-- Toast Notification Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="app.js?v=20260927_23"></script>
+    <script src="app.js?v=20260929_06"></script>
     <script>
         // Universal modal closer & safety bridge
         document.addEventListener('click', function(e) {
